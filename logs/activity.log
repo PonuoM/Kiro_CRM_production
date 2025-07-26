@@ -1,0 +1,15 @@
+2025-07-19 19:54:25 - Auto Rules Success - Auto Rules completed successfully. Processed: 0 customers in 0.01s
+2025-07-19 20:00:27 - Cron Job Success - Auto Rules Engine: {"new_to_distribute":0,"followup_to_waiting":0,"old_to_waiting":0,"total_processed":0,"errors":0}
+2025-07-19 20:03:05 - Customer Audit Trail - {"timestamp":"2025-07-19 20:03:05","customer_code":"TEST001","field":"CartStatus","old_value":"กำลังดูแล","new_value":"ตะกร้าแจก","reason":"TEST","changed_by":"UNIT_TEST"}
+2025-07-19 20:03:05 - Cron Job Success - TEST_JOB: {"test":1}
+2025-07-19 20:03:05 - Cron Job Error - TEST_JOB: Test error message
+2025-07-19 20:03:05 - Auto Rules Unit Tests - Completed 8 tests. Passed: 7, Failed: 1
+2025-07-19 20:06:05 - Customer Audit Trail - {"timestamp":"2025-07-19 20:06:05","customer_code":"TEST001","field":"CartStatus","old_value":"กำลังดูแล","new_value":"ตะกร้าแจก","reason":"TEST","changed_by":"UNIT_TEST"}
+2025-07-19 20:06:05 - Cron Job Success - TEST_JOB: {"test":1}
+2025-07-19 20:06:05 - Cron Job Error - TEST_JOB: Test error message
+2025-07-19 20:06:05 - Auto Rules Unit Tests - Completed 8 tests. Passed: 8, Failed: 0
+2025-07-19 20:06:36 - Cron Job Success - Auto Rules Engine: {"new_to_distribute":0,"followup_to_waiting":0,"old_to_waiting":0,"total_processed":0,"errors":0}
+2025-07-19 20:13:12 - Cron Job Success - Auto Rules Engine: {"new_to_distribute":0,"followup_to_waiting":0,"old_to_waiting":0,"total_processed":0,"errors":0}
+2025-07-19 20:14:12 - Cron Job Success - Auto Rules Engine: {"new_to_distribute":0,"followup_to_waiting":0,"old_to_waiting":0,"total_processed":0,"errors":0}
+2025-07-19 20:15:36 - Cron Job Success - Auto Rules Engine: {"new_to_distribute":0,"followup_to_waiting":0,"old_to_waiting":0,"total_processed":0,"errors":0}
+2025-07-19 20:22:14 - Cron Job Success - Auto Rules Engine: {"new_to_distribute":0,"followup_to_waiting":0,"old_to_waiting":0,"total_processed":0,"errors":0}

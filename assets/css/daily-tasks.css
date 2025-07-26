@@ -1,0 +1,327 @@
+/**
+ * Daily Tasks Styling
+ * CSS for daily tasks page and components
+ */
+
+/* Task Cards */
+.task-card {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.task-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.task-card.overdue {
+    border-left-color: #dc3545;
+    background-color: #fff5f5;
+}
+
+.task-card.completed {
+    border-left-color: #28a745;
+    background-color: #f8fff8;
+    opacity: 0.9;
+}
+
+.task-card.today {
+    border-left-color: #007bff;
+    background-color: #f8f9ff;
+}
+
+.task-card.upcoming {
+    border-left-color: #17a2b8;
+    background-color: #f8feff;
+}
+
+.task-card.new-customer {
+    border-left-color: #6f42c1;
+    background-color: #faf9ff;
+    position: relative;
+}
+
+.task-card.new-customer::before {
+    content: "NEW";
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background: linear-gradient(45deg, #6f42c1, #9955ff);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0 0 0 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Task Status Badge */
+.task-status-badge {
+    font-size: 0.75em;
+    font-weight: 500;
+    padding: 0.25em 0.5em;
+}
+
+/* Task Information */
+.task-time {
+    color: #6c757d;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.customer-info {
+    color: #495057;
+    font-size: 0.9em;
+}
+
+.task-remarks {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.9em;
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border-left: 3px solid #dee2e6;
+}
+
+/* Statistics Cards */
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+}
+
+.stats-card .card-body {
+    padding: 1.5rem;
+}
+
+.stats-card h3 {
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+/* Action Buttons */
+.btn-complete {
+    background-color: #28a745;
+    border-color: #28a745;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-complete:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-1px);
+}
+
+.btn-reopen {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.btn-reopen:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    color: white;
+}
+
+/* Loading States */
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.loading i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+}
+
+/* Section Headers */
+.section-header {
+    background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #007bff;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+}
+
+.section-header h5 {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+/* Priority Indicators */
+.priority-high {
+    border-left-color: #dc3545 !important;
+}
+
+.priority-medium {
+    border-left-color: #ffc107 !important;
+}
+
+.priority-low {
+    border-left-color: #28a745 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .task-card .card-body {
+        padding: 1rem;
+    }
+    
+    .stats-card .card-body {
+        padding: 1rem;
+    }
+    
+    .stats-card h3 {
+        font-size: 1.5rem;
+    }
+    
+    .task-card .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .task-card .ms-3 {
+        margin-left: 0 !important;
+        align-self: flex-start;
+    }
+}
+
+/* Animation for task updates */
+.task-updating {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.task-updated {
+    animation: taskUpdated 0.5s ease-in-out;
+}
+
+@keyframes taskUpdated {
+    0% { background-color: #d4edda; }
+    100% { background-color: transparent; }
+}
+
+/* Custom scrollbar for task lists */
+.task-list {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.task-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.task-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Task count badges */
+.task-count-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+/* Refresh button animation */
+.btn-refresh i {
+    transition: transform 0.3s ease;
+}
+
+.btn-refresh:hover i {
+    transform: rotate(180deg);
+}
+
+/* Last update timestamp */
+.last-update {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Task action buttons container */
+.task-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.task-actions .btn {
+    flex: 1;
+    min-width: 80px;
+}
+
+/* Hover effects for interactive elements */
+.task-card .customer-info:hover {
+    color: #007bff;
+    cursor: pointer;
+}
+
+/* Status-specific styling */
+.status-pending {
+    color: #ffc107;
+}
+
+.status-completed {
+    color: #28a745;
+}
+
+.status-overdue {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* Customer stats styling */
+.customer-stats {
+    background-color: #f8f9fa;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    border-left: 3px solid #6f42c1;
+}
+
+.customer-stats small {
+    color: #666;
+    font-size: 0.8rem;
+}

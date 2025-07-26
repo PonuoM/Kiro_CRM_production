@@ -1,0 +1,2 @@
+{"timestamp":"2025-07-19 20:03:05","job":"TEST_JOB","error":"Test error message","context":{"context":"test"},"server":"CLI","memory_usage":2097152,"peak_memory":2097152}
+{"timestamp":"2025-07-19 20:06:05","job":"TEST_JOB","error":"Test error message","context":{"context":"test"},"server":"CLI","memory_usage":2097152,"peak_memory":2097152}

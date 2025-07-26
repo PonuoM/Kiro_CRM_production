@@ -1,0 +1,105 @@
+# CRM System Production .htaccess
+# Security and Performance Configuration
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Force HTTPS (uncomment when SSL is enabled)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Protect configuration files
+<Files "config/*.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "includes/*.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "logs/*">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "cron/*">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "scripts/*">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Prevent directory browsing
+Options -Indexes
+
+# Enable compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# Cache static files
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType application/pdf "access plus 1 month"
+</IfModule>
+
+# Protect sensitive files
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sql|conf)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# PHP Security
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log ../logs/php_errors.log
+    php_value max_execution_time 30
+    php_value max_input_time 30
+    php_value memory_limit 128M
+    php_value post_max_size 10M
+    php_value upload_max_filesize 10M
+</IfModule>
+
+# Redirect to login page for root access
+RewriteEngine On
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^(.*)$ pages/login.php [L,R=301]
+
+# Allow debug/test files (remove in production)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.(php)$
+RewriteCond %{REQUEST_URI} ^/(fix_all_redirects|test_|csrf_debug|debug_|check_)
+RewriteRule .* - [L]
+
+# API routing
+RewriteRule ^api/(.*)$ api/$1 [L]
+
+# Static file handling
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^assets/(.*)$ assets/$1 [L]

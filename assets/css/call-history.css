@@ -1,0 +1,334 @@
+/* Call History Component Styles */
+
+.call-history-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.call-history-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.call-history-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.call-history-filters {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filter-group label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.call-history-stats {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.stats-row {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+}
+
+.call-history-content {
+    padding: 20px;
+}
+
+.call-history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.call-history-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.call-history-item:last-child {
+    border-bottom: none;
+}
+
+.call-date-time {
+    min-width: 120px;
+    font-size: 13px;
+    color: #666;
+}
+
+.call-date {
+    font-weight: 500;
+    color: #333;
+}
+
+.call-time {
+    font-size: 12px;
+    color: #888;
+}
+
+.call-status {
+    min-width: 100px;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-failed {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-incomplete {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.call-details {
+    flex: 1;
+}
+
+.call-talk-status {
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.call-reason {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.call-remarks {
+    font-size: 12px;
+    color: #333;
+    font-style: italic;
+}
+
+.call-duration {
+    min-width: 60px;
+    text-align: right;
+    font-size: 12px;
+    color: #666;
+}
+
+.call-created-by {
+    min-width: 80px;
+    text-align: right;
+    font-size: 11px;
+    color: #888;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.error {
+    text-align: center;
+    padding: 40px;
+    color: #dc3545;
+    background-color: #f8d7da;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid #eee;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: #666;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.pagination-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f8f9fa;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+    }
+    
+    .stats-row {
+        justify-content: center;
+    }
+    
+    .call-history-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .call-date-time,
+    .call-status,
+    .call-duration,
+    .call-created-by {
+        min-width: auto;
+        text-align: left;
+    }
+}
+
+/* Print styles */
+@media print {
+    .call-history-filters,
+    .pagination {
+        display: none;
+    }
+    
+    .call-history-container {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}

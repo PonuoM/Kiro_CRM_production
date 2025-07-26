@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(php:*)",
+      "Bash(find:*)",
+      "Bash(/mnt/c/xampp/php/php.exe check_database_structure.php)",
+      "Bash(/mnt/c/xampp/php/php.exe:*)",
+      "Bash(mysql:*)",
+      "Bash(curl:*)",
+      "Bash(rm:*)",
+      "Bash(cp:*)",
+      "Bash(ls:*)",
+      "Bash(net start:*)",
+      "Bash(/c/xampp/php/php.exe -r \"\nrequire_once ''config/database.php'';\n$db = Database::getInstance();\n$pdo = $db->getConnection();\n\necho ''Checking CustomerStatus values in database:'' . PHP_EOL;\n$stmt = $pdo->query(''SELECT CustomerStatus, COUNT(*) as count FROM customers GROUP BY CustomerStatus ORDER BY count DESC'');\n$statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);\nforeach($statuses as $status) {\n    echo ''- '' . ($status[''CustomerStatus''] ?: ''NULL'') . '': '' . $status[''count''] . '' customers'' . PHP_EOL;\n}\n\necho PHP_EOL . ''Total customers: '';\n$total = $pdo->query(''SELECT COUNT(*) as total FROM customers'')->fetch(PDO::FETCH_ASSOC);\necho $total[''total''] . PHP_EOL;\n\")",
+      "WebFetch(domain:localhost)",
+      "Bash(node:*)",
+      "Bash(chmod:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": []
+  }
+}
