@@ -97,12 +97,16 @@ try {
                 // Get the created assignment details
                 $assignment = $salesHistoryModel->getCurrentSalesAssignment($customerCode);
                 
+                // Get updated AssignmentCount for response (Story 1.3)
+                $assignmentCount = $salesHistoryModel->getAssignmentCount($customerCode);
+                
                 sendJsonResponse([
                     'success' => true,
                     'message' => 'มอบหมายลูกค้าสำเร็จ',
                     'data' => [
                         'assignment_id' => $assignmentId,
-                        'assignment' => $assignment
+                        'assignment' => $assignment,
+                        'assignment_count' => $assignmentCount
                     ]
                 ]);
             } else {
@@ -142,11 +146,15 @@ try {
                 // Get the new assignment details
                 $newAssignment = $salesHistoryModel->getCurrentSalesAssignment($customerCode);
                 
+                // Get updated AssignmentCount for response (Story 1.3)
+                $assignmentCount = $salesHistoryModel->getAssignmentCount($customerCode);
+                
                 sendJsonResponse([
                     'success' => true,
                     'message' => 'โอนย้ายลูกค้าสำเร็จ',
                     'data' => [
-                        'new_assignment' => $newAssignment
+                        'new_assignment' => $newAssignment,
+                        'assignment_count' => $assignmentCount
                     ]
                 ]);
             } else {
@@ -213,6 +221,7 @@ try {
             
             $successCount = 0;
             $failedCustomers = [];
+            $assignmentDetails = [];
             
             foreach ($customerCodes as $customerCode) {
                 $assignmentId = $salesHistoryModel->createSalesAssignment(
@@ -224,6 +233,13 @@ try {
                 
                 if ($assignmentId) {
                     $successCount++;
+                    // Get AssignmentCount for each successful assignment (Story 1.3)
+                    $assignmentCount = $salesHistoryModel->getAssignmentCount($customerCode);
+                    $assignmentDetails[] = [
+                        'customer_code' => $customerCode,
+                        'assignment_id' => $assignmentId,
+                        'assignment_count' => $assignmentCount
+                    ];
                 } else {
                     $failedCustomers[] = $customerCode;
                 }
@@ -243,7 +259,8 @@ try {
                 'data' => [
                     'success_count' => $successCount,
                     'failed_customers' => $failedCustomers,
-                    'total_processed' => count($customerCodes)
+                    'total_processed' => count($customerCodes),
+                    'assignment_details' => $assignmentDetails
                 ]
             ]);
             break;

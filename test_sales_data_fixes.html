@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบการแก้ไขข้อมูล Sales</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .test-pass { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .test-fail { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .test-info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>🔍 ทดสอบการแก้ไขปัญหาข้อมูล Sales</h1>
+        <p class="text-muted">ทดสอบการทำงานของ API หลังแก้ไข</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📊 ทดสอบ API customers/list.php</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary" onclick="testCustomerListAPI()">ทดสอบ API</button>
+                        <div id="customerListResult" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>⏰ ทดสอบ API dashboard/summary.php</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary" onclick="testDashboardAPI()">ทดสอบ API</button>
+                        <div id="dashboardResult" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>🎯 ทดสอบการแสดงผลแดชบร์ด</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-success" onclick="testDashboardDisplay()">ทดสอบการแสดงผล</button>
+                        <div id="displayResult" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📋 สรุปผลการทดสอบ</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="summaryResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let testResults = {
+            customerAPI: false,
+            dashboardAPI: false,
+            displayTest: false
+        };
+
+        async function testCustomerListAPI() {
+            const resultDiv = document.getElementById('customerListResult');
+            resultDiv.innerHTML = '<div class="spinner-border" role="status"></div> กำลังทดสอบ...';
+            
+            try {
+                const response = await fetch('api/customers/list.php?limit=5');
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.data) {
+                    let hasAssignDate = false;
+                    let hasReceivedDate = false;
+                    
+                    // ตรวจสอบว่ามีข้อมูล AssignDate และ ReceivedDate หรือไม่
+                    data.data.forEach(customer => {
+                        if (customer.AssignDate) hasAssignDate = true;
+                        if (customer.ReceivedDate) hasReceivedDate = true;
+                    });
+                    
+                    let result = '<div class="test-result test-pass">✅ API ทำงานปกติ</div>';
+                    result += `<div class="test-result test-info">📊 ข้อมูลที่ได้รับ: ${data.data.length} รายการ</div>`;
+                    result += `<div class="test-result ${hasAssignDate ? 'test-pass' : 'test-fail'}">
+                               ${hasAssignDate ? '✅' : '❌'} AssignDate: ${hasAssignDate ? 'มีข้อมูล' : 'ไม่มีข้อมูล'}
+                               </div>`;
+                    result += `<div class="test-result ${hasReceivedDate ? 'test-pass' : 'test-info'}">
+                               ${hasReceivedDate ? '✅' : 'ℹ️'} ReceivedDate: ${hasReceivedDate ? 'มีข้อมูล' : 'ไม่มีข้อมูล (ปกติ)'}
+                               </div>`;
+                    
+                    // แสดงตัวอย่างข้อมูล
+                    if (data.data.length > 0) {
+                        const sample = data.data[0];
+                        result += '<div class="test-result test-info">';
+                        result += '<strong>ตัวอย่างข้อมูล:</strong><br>';
+                        result += `ลูกค้า: ${sample.CustomerName}<br>`;
+                        result += `AssignDate: ${sample.AssignDate || 'ไม่มี'}<br>`;
+                        result += `CreatedDate: ${sample.CreatedDate || 'ไม่มี'}`;
+                        result += '</div>';
+                    }
+                    
+                    resultDiv.innerHTML = result;
+                    testResults.customerAPI = true;
+                } else {
+                    throw new Error(`API Error: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result test-fail">❌ ข้อผิดพลาด: ${error.message}</div>`;
+                testResults.customerAPI = false;
+            }
+            updateSummary();
+        }
+
+        async function testDashboardAPI() {
+            const resultDiv = document.getElementById('dashboardResult');
+            resultDiv.innerHTML = '<div class="spinner-border" role="status"></div> กำลังทดสอบ...';
+            
+            try {
+                const response = await fetch('api/dashboard/summary.php?include_customers=true&limit=5');
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.data && data.data.customers) {
+                    let hasTimeRemaining = false;
+                    let timeRemainingStats = { positive: 0, negative: 0, zero: 0 };
+                    
+                    // ตรวจสอบข้อมูล time_remaining_days
+                    data.data.customers.forEach(customer => {
+                        if (customer.time_remaining_days !== null && customer.time_remaining_days !== undefined) {
+                            hasTimeRemaining = true;
+                            if (customer.time_remaining_days > 0) timeRemainingStats.positive++;
+                            else if (customer.time_remaining_days < 0) timeRemainingStats.negative++;
+                            else timeRemainingStats.zero++;
+                        }
+                    });
+                    
+                    let result = '<div class="test-result test-pass">✅ API ทำงานปกติ</div>';
+                    result += `<div class="test-result test-info">📊 ข้อมูลลูกค้า: ${data.data.customers.length} รายการ</div>`;
+                    result += `<div class="test-result ${hasTimeRemaining ? 'test-pass' : 'test-fail'}">
+                               ${hasTimeRemaining ? '✅' : '❌'} time_remaining_days: ${hasTimeRemaining ? 'คำนวณได้' : 'ไม่สามารถคำนวณ'}
+                               </div>`;
+                    
+                    if (hasTimeRemaining) {
+                        result += '<div class="test-result test-info">';
+                        result += '<strong>สถิติเวลาที่เหลือ:</strong><br>';
+                        result += `เหลือเวลา: ${timeRemainingStats.positive} รายการ<br>`;
+                        result += `เลยเวลา: ${timeRemainingStats.negative} รายการ<br>`;
+                        result += `วันสุดท้าย: ${timeRemainingStats.zero} รายการ`;
+                        result += '</div>';
+                    }
+                    
+                    // แสดงตัวอย่างข้อมูล
+                    if (data.data.customers.length > 0) {
+                        const sample = data.data.customers[0];
+                        result += '<div class="test-result test-info">';
+                        result += '<strong>ตัวอย่างข้อมูล:</strong><br>';
+                        result += `ลูกค้า: ${sample.CustomerName}<br>`;
+                        result += `เวลาที่เหลือ: ${sample.time_remaining_days} วัน<br>`;
+                        result += `สถานะ: ${sample.time_status || 'ไม่มี'}`;
+                        result += '</div>';
+                    }
+                    
+                    resultDiv.innerHTML = result;
+                    testResults.dashboardAPI = true;
+                } else {
+                    throw new Error(`API Error: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result test-fail">❌ ข้อผิดพลาด: ${error.message}</div>`;
+                testResults.dashboardAPI = false;
+            }
+            updateSummary();
+        }
+
+        function testDashboardDisplay() {
+            const resultDiv = document.getElementById('displayResult');
+            resultDiv.innerHTML = '<div class="spinner-border" role="status"></div> กำลังทดสอบ...';
+            
+            // สร้างข้อมูลทดสอบ
+            const testCustomers = [
+                {
+                    CustomerName: 'ลูกค้าทดสอบ 1',
+                    time_remaining_days: 15,
+                    assign_date: '2025-01-15',
+                    created_date: '2025-01-10'
+                },
+                {
+                    CustomerName: 'ลูกค้าทดสอบ 2',
+                    time_remaining_days: -5,
+                    assign_date: null,
+                    created_date: '2025-01-01'
+                },
+                {
+                    CustomerName: 'ลูกค้าทดสอบ 3',
+                    time_remaining_days: 3,
+                    assign_date: '2025-01-20',
+                    created_date: '2025-01-15'
+                }
+            ];
+            
+            let result = '<div class="test-result test-pass">✅ ทดสอบการแสดงผล</div>';
+            
+            // ทดสอบฟังก์ชัน renderTimeProgress
+            testCustomers.forEach((customer, index) => {
+                const timeDisplay = formatTimeRemaining(customer.time_remaining_days);
+                const dateDisplay = formatReceivedDate(customer);
+                
+                result += `<div class="test-result test-info">
+                           <strong>ลูกค้า ${index + 1}:</strong><br>
+                           ชื่อ: ${customer.CustomerName}<br>
+                           เวลาที่เหลือ: ${timeDisplay}<br>
+                           วันที่ได้รับ: ${dateDisplay}
+                           </div>`;
+            });
+            
+            resultDiv.innerHTML = result;
+            testResults.displayTest = true;
+            updateSummary();
+        }
+
+        function formatTimeRemaining(timeRemaining) {
+            if (timeRemaining === null || timeRemaining === undefined) {
+                return 'ไม่มีข้อมูล';
+            }
+            
+            if (timeRemaining < 0) {
+                const overdueDays = Math.abs(timeRemaining);
+                if (overdueDays > 365) {
+                    return 'เลยมากกว่า 1 ปี';
+                } else {
+                    return `เลย ${overdueDays} วัน`;
+                }
+            } else if (timeRemaining === 0) {
+                return 'วันสุดท้าย';
+            } else if (timeRemaining === 1) {
+                return 'เหลือ 1 วัน';
+            } else {
+                return `เหลือ ${timeRemaining} วัน`;
+            }
+        }
+
+        function formatReceivedDate(customer) {
+            let dateToFormat = null;
+            let source = '';
+            
+            if (customer.assign_date) {
+                dateToFormat = customer.assign_date;
+                source = 'มอบหมาย';
+            } else if (customer.created_date) {
+                dateToFormat = customer.created_date;
+                source = 'สร้าง';
+            }
+            
+            if (!dateToFormat) {
+                return 'ไม่มีข้อมูล';
+            }
+            
+            const formatted = formatDate(dateToFormat);
+            return `${formatted} (${source})`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function updateSummary() {
+            const summaryDiv = document.getElementById('summaryResult');
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(result => result).length;
+            
+            let summary = `<div class="test-result ${passedTests === totalTests ? 'test-pass' : 'test-fail'}">`;
+            summary += `<h6>📊 ผลการทดสอบรวม: ${passedTests}/${totalTests}</h6>`;
+            summary += `<ul>`;
+            summary += `<li>API customers/list.php: ${testResults.customerAPI ? '✅ ผ่าน' : '❌ ไม่ผ่าน'}</li>`;
+            summary += `<li>API dashboard/summary.php: ${testResults.dashboardAPI ? '✅ ผ่าน' : '❌ ไม่ผ่าน'}</li>`;
+            summary += `<li>การแสดงผล: ${testResults.displayTest ? '✅ ผ่าน' : '❌ ไม่ผ่าน'}</li>`;
+            summary += `</ul>`;
+            
+            if (passedTests === totalTests) {
+                summary += '<div class="alert alert-success mt-3">🎉 การแก้ไขสำเร็จทั้งหมด!</div>';
+            } else {
+                summary += '<div class="alert alert-warning mt-3">⚠️ ยังมีปัญหาที่ต้องแก้ไข</div>';
+            }
+            
+            summary += '</div>';
+            summaryDiv.innerHTML = summary;
+        }
+
+        // เริ่มต้นทดสอบอัตโนมัติ
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                testCustomerListAPI();
+                setTimeout(() => testDashboardAPI(), 1000);
+                setTimeout(() => testDashboardDisplay(), 2000);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

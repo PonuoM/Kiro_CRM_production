@@ -3,21 +3,35 @@
 // This file should be used in production environment
 // Copy this file to database.php and update the credentials
 
-// Production database configuration
+// Direct variables for existing API compatibility
+$host = 'localhost';
+$port = '3306';
+$dbname = 'primacom_CRM';
+$username = 'primacom_bloguser';
+$password = 'pJnL53Wkhju2LaGPytw8';
+$charset = 'utf8mb4';
+
+// Create DSN string
+$dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";
+
+// PDO Options
+$options = [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES => false,
+    PDO::ATTR_PERSISTENT => false, // Disable persistent connections for shared hosting
+    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
+];
+
+// Production database configuration (backward compatibility)
 $db_config = [
-    'host' => 'localhost',
-    'port' => '3306', // Standard MySQL port for DirectAdmin
-    'dbname' => 'primacom_CRM', // Actual database name
-    'username' => 'primacom_bloguser', // Actual database username
-    'password' => 'pJnL53Wkhju2LaGPytw8', // Actual database password
-    'charset' => 'utf8mb4',
-    'options' => [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-        PDO::ATTR_PERSISTENT => false, // Disable persistent connections for shared hosting
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
-    ]
+    'host' => $host,
+    'port' => $port,
+    'dbname' => $dbname,
+    'username' => $username,
+    'password' => $password,
+    'charset' => $charset,
+    'options' => $options
 ];
 
 /**

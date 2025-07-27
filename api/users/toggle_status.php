@@ -66,14 +66,45 @@ try {
         // Log activity
         logActivity("User status changed", "User: {$existingUser['Username']} {$action} by " . getCurrentUsername());
         
+        $responseData = [
+            'id' => $userId,
+            'status' => $newStatus,
+            'statusText' => $newStatus == 1 ? 'ใช้งาน' : 'ปิดใช้งาน'
+        ];
+        
+        // Story 2.1: Trigger Sales Departure Workflow if Sales user is being deactivated
+        if ($newStatus == 0 && $existingUser['Role'] === 'Sale') {
+            require_once __DIR__ . '/../../includes/SalesDepartureWorkflow.php';
+            
+            $departureWorkflow = new SalesDepartureWorkflow();
+            $workflowResult = $departureWorkflow->triggerSalesDepartureWorkflow($userId);
+            
+            if ($workflowResult) {
+                $responseData['departure_workflow'] = [
+                    'executed' => true,
+                    'results' => $workflowResult
+                ];
+                
+                // Enhanced success message with workflow results
+                $totalProcessed = $workflowResult['totals']['total_processed'];
+                $message = "{$action}ผู้ใช้สำเร็จ และโอนย้าย leads จำนวน {$totalProcessed} รายการ";
+            } else {
+                $responseData['departure_workflow'] = [
+                    'executed' => false,
+                    'error' => 'Failed to execute departure workflow'
+                ];
+                
+                // Warning message about workflow failure
+                $message = "{$action}ผู้ใช้สำเร็จ แต่เกิดข้อผิดพลาดในการโอนย้าย leads";
+            }
+        } else {
+            $message = "{$action}ผู้ใช้สำเร็จ";
+        }
+        
         sendJsonResponse([
             'success' => true,
-            'message' => "{$action}ผู้ใช้สำเร็จ",
-            'data' => [
-                'id' => $userId,
-                'status' => $newStatus,
-                'statusText' => $newStatus == 1 ? 'ใช้งาน' : 'ปิดใช้งาน'
-            ]
+            'message' => $message,
+            'data' => $responseData
         ]);
     } else {
         sendJsonResponse([

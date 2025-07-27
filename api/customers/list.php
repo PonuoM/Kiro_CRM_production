@@ -38,7 +38,12 @@ try {
                 Sales,
                 CreatedDate,
                 CustomerProvince,
-                ModifiedDate
+                ModifiedDate,
+                AssignDate,
+                ReceivedDate,
+                CartStatusDate,
+                AssignmentCount,
+                ContactAttempts
             FROM customers WHERE 1=1";
     $params = [];
     

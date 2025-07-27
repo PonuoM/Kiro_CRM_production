@@ -1,11 +1,14 @@
 #!/bin/bash
-# CRM Auto Rules Cron Job Script
-# This script runs the auto rules engine
+# Lead Management Automation Rules - Cron Job Shell Wrapper
+# Story 1.2: Develop Lead Management Cron Job
+# 
+# This script wraps the execution of auto_rules.php for cron scheduling
+# Provides logging, error handling, and environment setup
 
-# Configuration - UPDATE THESE PATHS
-SCRIPT_DIR="/home/username/public_html/crm-system/cron"
-LOG_DIR="/home/username/public_html/logs"
-PHP_PATH="/usr/local/bin/php"
+# Configuration - UPDATE THESE PATHS FOR YOUR SERVER
+SCRIPT_DIR="/mnt/c/xampp/htdocs/Kiro_CRM_production/cron"
+LOG_DIR="/mnt/c/xampp/htdocs/Kiro_CRM_production/logs"
+PHP_PATH="/usr/bin/php"
 
 # Create log directory if it doesn't exist
 mkdir -p "$LOG_DIR"

@@ -16,7 +16,15 @@
       "WebFetch(domain:localhost)",
       "Bash(node:*)",
       "Bash(chmod:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"Checking $file...\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(cat:*)",
+      "WebFetch(domain:www.prima49.com)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }
