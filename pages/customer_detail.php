@@ -27,7 +27,7 @@ $canEdit = Permissions::hasPermission('customer_edit');
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/customer-detail.css">
     <link rel="stylesheet" href="../assets/css/customer-intelligence.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="customer-detail-container">
@@ -246,7 +246,7 @@ $canEdit = Permissions::hasPermission('customer_edit');
                 <h3>สร้างคำสั่งซื้อ</h3>
                 <button class="modal-close" onclick="closeModal('order-modal')">&times;</button>
             </div>
-            <form id="order-form" class="modal-body">
+            <form id="order-form" class="modal-body" onkeydown="return preventEnterSubmit(event)">
                 <input type="hidden" id="order-customer-code" value="<?php echo htmlspecialchars($customerCode); ?>">
                 
                 <div class="form-group">
@@ -255,13 +255,14 @@ $canEdit = Permissions::hasPermission('customer_edit');
                 </div>
                 
                 <div class="form-group">
-                    <label for="payment-method">วิธีการชำระเงิน</label>
-                    <select id="payment-method" name="payment_method">
+                    <label for="payment-method">วิธีการชำระเงิน *</label>
+                    <select id="payment-method" name="payment_method" required>
                         <option value="">เลือกวิธีการชำระเงิน</option>
                         <option value="เงินสด">เงินสด</option>
                         <option value="โอนเงิน">โอนเงิน</option>
                         <option value="เช็ค">เช็ค</option>
                         <option value="บัตรเครดิต">บัตรเครดิต</option>
+                        <option value="เก็บเงินปลายทาง">เก็บเงินปลายทาง</option>
                     </select>
                 </div>
                 
@@ -319,7 +320,10 @@ $canEdit = Permissions::hasPermission('customer_edit');
                         </div>
                         <div class="form-group">
                             <label>ส่วนลด (%)</label>
-                            <input type="number" id="discount-percent" name="discount_percent" min="0" max="100" step="0.01" placeholder="0.00">
+                            <div class="input-group">
+                                <input type="number" id="discount-percent" name="discount_percent" min="0" max="100" step="0.01" placeholder="0.00">
+                                <span class="input-group-text">%</span>
+                            </div>
                         </div>
                     </div>
                     

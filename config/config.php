@@ -3,20 +3,20 @@
 // This file should be used in production environment
 // Copy this file to config.php for production deployment
 
+// Session configuration MUST come BEFORE session_start()
+if (session_status() == PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', 1); // Enable for HTTPS
+    ini_set('session.cookie_samesite', 'Strict');
+    ini_set('session.gc_maxlifetime', 3600); // 1 hour session timeout
+    ini_set('session.name', 'CRM_SESSION');
+}
+
 // Application settings
 define('APP_NAME', 'CRM System');
 define('APP_VERSION', '1.0.0');
 define('APP_ENV', 'production');
-
-// Security settings for production
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', 1); // Enable for HTTPS
-ini_set('session.cookie_samesite', 'Strict');
-ini_set('session.gc_maxlifetime', 3600); // 1 hour session timeout
-
-// Session name (change for security)
-ini_set('session.name', 'CRM_SESSION');
 
 // Path Constants for URL Management
 define('BASE_URL', '/crm_system/Kiro_CRM_production/');

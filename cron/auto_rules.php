@@ -31,6 +31,7 @@ date_default_timezone_set('Asia/Bangkok');
 
 // Include dependencies
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/customer_intelligence.php';
 
 // ================================
 // LOGGING SYSTEM
@@ -84,21 +85,25 @@ class CronLogger {
 class LeadManagementAutomation {
     private $pdo;
     private $logger;
+    private $intelligence;
     private $stats;
     
     public function __construct() {
         $this->logger = new CronLogger();
         $this->stats = [
             'processed_customers' => 0,
+            'intelligence_updates' => 0,
             'time_based_updates' => 0,
             'interaction_based_updates' => 0,
             'frozen_customers' => 0,
+            'high_value_protected' => 0,
             'errors' => 0,
             'start_time' => microtime(true)
         ];
         
         $this->initializeDatabase();
-        $this->logger->info('Lead Management Automation initialized');
+        $this->intelligence = new CustomerIntelligence($this->pdo);
+        $this->logger->info('Lead Management Automation initialized with Customer Intelligence');
     }
     
     private function initializeDatabase() {
@@ -117,19 +122,25 @@ class LeadManagementAutomation {
      * Main execution method - runs all automation rules
      */
     public function execute() {
-        $this->logger->info('Starting Lead Management Automation execution');
+        $this->logger->info('Starting Lead Management Automation execution with Customer Intelligence');
         
         try {
-            // Step 1: Process Time-Based Hybrid Logic Rules
+            // Step 1: Update Customer Intelligence (sample batch)
+            $this->updateCustomerIntelligence();
+            
+            // Step 2: Protect High-Value Customers
+            $this->protectHighValueCustomers();
+            
+            // Step 3: Process Time-Based Hybrid Logic Rules
             $this->processTimeBasedRules();
             
-            // Step 2: Process Interaction-Based Hybrid Logic Rules
+            // Step 4: Process Interaction-Based Hybrid Logic Rules
             $this->processInteractionBasedRules();
             
-            // Step 3: Process Freezing Rules
+            // Step 5: Process Enhanced Freezing Rules
             $this->processFreezingRules();
             
-            // Step 4: Generate execution summary
+            // Step 6: Generate execution summary
             $this->generateSummary();
             
         } catch (Exception $e) {
@@ -139,6 +150,78 @@ class LeadManagementAutomation {
                 'trace' => $e->getTraceAsString()
             ]);
             throw $e;
+        }
+    }
+    
+    /**
+     * Update Customer Intelligence for sample of customers
+     */
+    private function updateCustomerIntelligence() {
+        $this->logger->info('Updating Customer Intelligence (sample batch)');
+        
+        try {
+            // Process 200 random customers daily to ensure intelligence is current
+            $sql = "SELECT CustomerCode FROM customers ORDER BY RAND() LIMIT 200";
+            $stmt = $this->pdo->query($sql);
+            $customers = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            $updateCount = 0;
+            
+            foreach ($customers as $customerCode) {
+                try {
+                    $result = $this->intelligence->updateCustomerIntelligence($customerCode);
+                    if ($result) {
+                        $updateCount++;
+                        $this->stats['processed_customers']++;
+                    }
+                } catch (Exception $e) {
+                    $this->logger->warning('Failed to update customer intelligence', [
+                        'customer_code' => $customerCode,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            $this->stats['intelligence_updates'] = $updateCount;
+            $this->logger->success("Customer intelligence updated for $updateCount customers");
+            
+        } catch (Exception $e) {
+            $this->stats['errors']++;
+            $this->logger->error('Failed to update customer intelligence', ['error' => $e->getMessage()]);
+        }
+    }
+    
+    /**
+     * Protect High-Value Customers (Grade A,B) from inappropriate freezing
+     */
+    private function protectHighValueCustomers() {
+        $this->logger->info('Protecting high-value customers from freezing');
+        
+        try {
+            // Unfreeze Grade A,B customers with high purchase amounts
+            $sql = "
+                UPDATE customers 
+                SET CustomerTemperature = 'WARM',
+                    ModifiedDate = NOW(),
+                    ModifiedBy = 'auto_rules_cron_protection'
+                WHERE CustomerGrade IN ('A', 'B')
+                AND CustomerTemperature = 'FROZEN'
+                AND TotalPurchase > 50000
+            ";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+            $protectedCount = $stmt->rowCount();
+            
+            $this->stats['high_value_protected'] = $protectedCount;
+            
+            if ($protectedCount > 0) {
+                $this->logger->success("Protected $protectedCount high-value customers from freezing");
+            }
+            
+        } catch (Exception $e) {
+            $this->stats['errors']++;
+            $this->logger->error('Failed to protect high-value customers', ['error' => $e->getMessage()]);
         }
     }
     
@@ -336,22 +419,25 @@ class LeadManagementAutomation {
     }
     
     /**
-     * AC3: Process Freezing Rules
+     * AC3: Process Enhanced Freezing Rules with Grade Protection
      * 
      * Rule: AssignmentCount >= 3 และถูกดึงคืนอีกครั้ง → CustomerTemperature = 'FROZEN'
+     * Enhanced: Protect Grade A,B customers with high purchase amounts
      * Note: ลูกค้าที่ FROZEN จะไม่แสดงใน "ตะกร้าแจก" เป็นเวลา 6 เดือน
      */
     private function processFreezingRules() {
-        $this->logger->info('Processing Freezing Rules');
+        $this->logger->info('Processing Enhanced Freezing Rules with Grade Protection');
         
         try {
-            // Find customers with AssignmentCount >= 3 that are back in distribution basket
+            // Find customers with AssignmentCount >= 3 but protect Grade A,B high-value customers
             $sql = "
-                SELECT CustomerCode, CustomerName, AssignmentCount, CustomerTemperature, Sales
+                SELECT CustomerCode, CustomerName, AssignmentCount, CustomerTemperature, 
+                       CustomerGrade, TotalPurchase, Sales
                 FROM customers
                 WHERE AssignmentCount >= 3
                 AND CartStatus = 'ตะกร้าแจก'
                 AND (CustomerTemperature IS NULL OR CustomerTemperature != 'FROZEN')
+                AND NOT (CustomerGrade IN ('A', 'B') AND TotalPurchase > 50000)
                 LIMIT 1000
             ";
             
@@ -360,14 +446,28 @@ class LeadManagementAutomation {
             $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             $updateCount = 0;
+            $protectedCount = 0;
             
             foreach ($customers as $customer) {
+                // Double-check protection for Grade A,B customers
+                if (in_array($customer['CustomerGrade'], ['A', 'B']) && $customer['TotalPurchase'] > 50000) {
+                    $protectedCount++;
+                    $this->logger->info('High-value customer protected from freezing', [
+                        'customer_code' => $customer['CustomerCode'],
+                        'customer_name' => $customer['CustomerName'],
+                        'grade' => $customer['CustomerGrade'],
+                        'total_purchase' => $customer['TotalPurchase'],
+                        'assignment_count' => $customer['AssignmentCount']
+                    ]);
+                    continue;
+                }
+                
                 // Update CustomerTemperature to 'FROZEN'
                 $updateSql = "
                     UPDATE customers 
                     SET CustomerTemperature = 'FROZEN',
                         ModifiedDate = NOW(),
-                        ModifiedBy = 'auto_rules_cron'
+                        ModifiedBy = 'auto_rules_cron_enhanced'
                     WHERE CustomerCode = ?
                 ";
                 
@@ -375,9 +475,11 @@ class LeadManagementAutomation {
                 
                 if ($updateStmt->execute([$customer['CustomerCode']])) {
                     $updateCount++;
-                    $this->logger->info('Customer frozen due to high assignment count', [
+                    $this->logger->info('Customer frozen due to high assignment count (Grade protected)', [
                         'customer_code' => $customer['CustomerCode'],
                         'customer_name' => $customer['CustomerName'],
+                        'grade' => $customer['CustomerGrade'],
+                        'total_purchase' => $customer['TotalPurchase'],
                         'assignment_count' => $customer['AssignmentCount'],
                         'previous_temperature' => $customer['CustomerTemperature'],
                         'sales' => $customer['Sales']
@@ -386,11 +488,11 @@ class LeadManagementAutomation {
             }
             
             $this->stats['frozen_customers'] += $updateCount;
-            $this->logger->success("Freezing rule processed: $updateCount customers frozen");
+            $this->logger->success("Enhanced freezing rule processed: $updateCount customers frozen, $protectedCount high-value customers protected");
             
         } catch (Exception $e) {
             $this->stats['errors']++;
-            $this->logger->error('Failed to process freezing rules', ['error' => $e->getMessage()]);
+            $this->logger->error('Failed to process enhanced freezing rules', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
@@ -402,12 +504,15 @@ class LeadManagementAutomation {
         $executionTime = round(microtime(true) - $this->stats['start_time'], 2);
         $this->stats['execution_time'] = $executionTime;
         
-        $this->logger->info('Execution Summary', [
+        $this->logger->info('Enhanced Execution Summary with Customer Intelligence', [
             'execution_time_seconds' => $executionTime,
+            'customers_processed' => $this->stats['processed_customers'],
+            'intelligence_updates' => $this->stats['intelligence_updates'],
             'time_based_updates' => $this->stats['time_based_updates'],
             'interaction_based_updates' => $this->stats['interaction_based_updates'],
             'frozen_customers' => $this->stats['frozen_customers'],
-            'total_updates' => $this->stats['time_based_updates'] + $this->stats['interaction_based_updates'] + $this->stats['frozen_customers'],
+            'high_value_protected' => $this->stats['high_value_protected'],
+            'total_updates' => $this->stats['intelligence_updates'] + $this->stats['time_based_updates'] + $this->stats['interaction_based_updates'] + $this->stats['frozen_customers'],
             'errors' => $this->stats['errors'],
             'memory_usage_mb' => round(memory_get_peak_usage(true) / 1024 / 1024, 2)
         ]);
@@ -433,25 +538,29 @@ class LeadManagementAutomation {
                 ";
                 
                 $details = json_encode([
+                    'customers_processed' => $this->stats['processed_customers'],
+                    'intelligence_updates' => $this->stats['intelligence_updates'],
                     'time_based_updates' => $this->stats['time_based_updates'],
                     'interaction_based_updates' => $this->stats['interaction_based_updates'],
                     'frozen_customers' => $this->stats['frozen_customers'],
+                    'high_value_protected' => $this->stats['high_value_protected'],
                     'errors' => $this->stats['errors']
-                ]);
+                ], JSON_UNESCAPED_UNICODE);
                 
-                $totalUpdates = $this->stats['time_based_updates'] + 
+                $totalUpdates = $this->stats['intelligence_updates'] + 
+                               $this->stats['time_based_updates'] + 
                                $this->stats['interaction_based_updates'] + 
                                $this->stats['frozen_customers'];
                 
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([
-                    'CRON_EXECUTION',
-                    'AUTO_RULES_DAILY',
+                    'CRON_EXECUTION_ENHANCED',
+                    'AUTO_RULES_DAILY_WITH_INTELLIGENCE',
                     $details,
                     $totalUpdates,
                     $this->stats['execution_time'],
                     round(memory_get_peak_usage(true) / 1024 / 1024, 2),
-                    'auto_rules_cron'
+                    'auto_rules_cron_enhanced'
                 ]);
                 
                 $this->logger->info('Execution statistics stored in system_logs');

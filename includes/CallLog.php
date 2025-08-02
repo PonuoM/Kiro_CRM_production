@@ -252,9 +252,11 @@ class CallLog extends BaseModel {
         // Validate TalkStatus (set default if CallStatus is 'ติดต่อได้')
         if (!empty($normalizedData['CallStatus']) && $normalizedData['CallStatus'] === 'ติดต่อได้') {
             if (empty($normalizedData['TalkStatus'])) {
-                $normalizedData['TalkStatus'] = 'ได้คุย'; // Set default
+                $normalizedData['TalkStatus'] = 'คุยจบ'; // Set default
             } else {
                 $validTalkStatuses = [
+                    'คุยจบ',
+                    'คุยไม่จบ',
                     'ได้คุย',
                     'ยังไม่สนใจ', 
                     'ขอคิดดูก่อน',

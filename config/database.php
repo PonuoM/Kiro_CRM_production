@@ -64,12 +64,12 @@ class Database {
      * Create database connection with retry logic
      */
     private function connect() {
-        global $db_config;
+        global $host, $port, $dbname, $username, $password, $charset, $options;
         
         while ($this->connectionAttempts < $this->maxConnectionAttempts) {
             try {
-                $dsn = "mysql:host={$db_config['host']};port={$db_config['port']};dbname={$db_config['dbname']};charset={$db_config['charset']}";
-                $this->connection = new PDO($dsn, $db_config['username'], $db_config['password'], $db_config['options']);
+                $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=$charset";
+                $this->connection = new PDO($dsn, $username, $password, $options);
                 
                 // Test the connection
                 $this->connection->query('SELECT 1');

@@ -35,7 +35,7 @@ echo "<div class='container-fluid'>";
 echo "<div class='text-center mb-4'>";
 echo "<h1 class='display-5 fw-bold text-success'>🎉 Cron Jobs Status - Clean & Ready!</h1>";
 echo "<p class='lead text-muted'>ตรวจสอบสถานะหลังทำความสะอาดเรียบร้อยแล้ว</p>";
-echo "<div class='badge bg-success fs-6'>7 Cron Jobs ที่ถูกต้อง</div>";
+echo "<div class='badge bg-success fs-6'>8 Cron Jobs ที่ถูกต้อง</div>";
 echo "<br><small class='text-muted'>เวลาตรวจสอบ: " . date('d/m/Y H:i:s') . "</small>";
 echo "</div>";
 
@@ -58,6 +58,15 @@ $currentCrons = [
         'frequency' => 'ทุกวันเวลา 01:00',
         'type' => 'shell',
         'log_file' => null
+    ],
+    [
+        'schedule' => '0 2 * * *',
+        'command' => '/usr/bin/php /home/primacom/public_html/crm_system/Kiro_CRM_production/cron/auto_rules_fixed.php >> /home/primacom/public_html/crm_system/Kiro_CRM_production/logs/cron_auto_rules.log 2>&1',
+        'name' => 'Auto Rules Fixed',
+        'description' => 'Fixed Auto Rules with proper SQL and logging',
+        'frequency' => 'ทุกวันเวลา 02:00',
+        'type' => 'php',
+        'log_file' => 'logs/cron_auto_rules.log'
     ],
     [
         'schedule' => '0 1 * * *',
@@ -114,7 +123,7 @@ echo "<h3><i class='fas fa-check-circle'></i> ✅ Cleanup สำเร็จ!</h
 echo "<div class='row'>";
 echo "<div class='col-md-3'>";
 echo "<div class='text-center'>";
-echo "<div class='display-6 text-success'>7</div>";
+echo "<div class='display-6 text-success'>8</div>";
 echo "<small class='text-muted'>Cron Jobs ที่ถูกต้อง</small>";
 echo "</div>";
 echo "</div>";
@@ -157,7 +166,7 @@ echo "</div>";
 // 2. Cron Jobs ปัจจุบัน
 echo "<div class='status-card info'>";
 echo "<div class='p-4'>";
-echo "<h3><i class='fas fa-cogs'></i> 📋 Cron Jobs ที่ใช้งาน (7 รายการ)</h3>";
+echo "<h3><i class='fas fa-cogs'></i> 📋 Cron Jobs ที่ใช้งาน (8 รายการ)</h3>";
 
 foreach ($currentCrons as $i => $cron) {
     $typeIcons = [
@@ -215,7 +224,8 @@ $expectedLogFiles = [
     'logs/cron_smart.log' => ['name' => 'Smart Update', 'expected_frequency' => 86400],
     'logs/cron_reassign.log' => ['name' => 'Auto Reassign', 'expected_frequency' => 21600],
     'logs/cron_full.log' => ['name' => 'Full System', 'expected_frequency' => 604800],
-    'logs/health_check.log' => ['name' => 'Health Check', 'expected_frequency' => 1800]
+    'logs/health_check.log' => ['name' => 'Health Check', 'expected_frequency' => 1800],
+    'logs/cron_auto_rules.log' => ['name' => 'Auto Rules Fixed', 'expected_frequency' => 86400]
 ];
 
 $hasLogs = false;

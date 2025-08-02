@@ -118,38 +118,38 @@ function getDistributionDashboard($pdo) {
         // Get summary statistics
         $stats = [];
         
-        // Unassigned customers count
-        $unassignedSql = "SELECT COUNT(*) as count FROM customers WHERE Sales IS NULL OR Sales = ''";
+        // Customers in distribution basket ready to be assigned
+        $unassignedSql = "SELECT COUNT(*) as count FROM customers WHERE CartStatus = 'ตะกร้าแจก'";
         $stmt = $pdo->prepare($unassignedSql);
         $stmt->execute();
         $stats['unassigned'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
         // Active sales users
-        $salesSql = "SELECT COUNT(*) as count FROM users WHERE role = 'sales' AND status = 'active'";
+        $salesSql = "SELECT COUNT(*) as count FROM users WHERE Role = 'Sales' AND Status = 1";
         $stmt = $pdo->prepare($salesSql);
         $stmt->execute();
         $stats['active_sales'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // HOT unassigned customers
+        // HOT customers in distribution basket
         $hotSql = "SELECT COUNT(*) as count FROM customers 
-                   WHERE (Sales IS NULL OR Sales = '') 
+                   WHERE CartStatus = 'ตะกร้าแจก' 
                    AND COALESCE(CustomerTemperature, 'WARM') = 'HOT'";
         $stmt = $pdo->prepare($hotSql);
         $stmt->execute();
         $stats['hot_unassigned'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // Grade A unassigned customers
+        // Grade A customers in distribution basket
         $gradeASql = "SELECT COUNT(*) as count FROM customers 
-                      WHERE (Sales IS NULL OR Sales = '') 
+                      WHERE CartStatus = 'ตะกร้าแจก' 
                       AND COALESCE(CustomerGrade, 'D') = 'A'";
         $stmt = $pdo->prepare($gradeASql);
         $stmt->execute();
         $stats['grade_a_unassigned'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // Recent assignment activity (last 7 days)
+        // Recent assignment activity (last 7 days) - customers moved to assigned status
         $recentSql = "SELECT COUNT(*) as count FROM customers 
-                      WHERE Sales IS NOT NULL AND Sales != '' 
-                      AND UpdatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+                      WHERE CartStatus = 'ลูกค้าแจกแล้ว' 
+                      AND ModifiedDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
         $stmt = $pdo->prepare($recentSql);
         $stmt->execute();
         $stats['recent_assignments'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
@@ -188,7 +188,7 @@ function getUnassignedCustomers($pdo) {
                     CreatedDate,
                     ModifiedDate
                 FROM customers 
-                WHERE (Sales IS NULL OR Sales = '')";
+                WHERE CartStatus = 'ตะกร้าแจก'";
         
         $params = [];
         
@@ -236,18 +236,18 @@ function getUnassignedCustomers($pdo) {
 function getSalesUsers($pdo) {
     try {
         $sql = "SELECT 
-                    username,
-                    first_name,
-                    last_name,
-                    email,
-                    status,
-                    created_at,
-                    (SELECT COUNT(*) FROM customers WHERE Sales = users.username) as assigned_customers,
-                    (SELECT COUNT(*) FROM customers WHERE Sales = users.username AND COALESCE(CustomerGrade, 'D') = 'A') as grade_a_customers,
-                    (SELECT COUNT(*) FROM customers WHERE Sales = users.username AND COALESCE(CustomerTemperature, 'WARM') = 'HOT') as hot_customers
+                    Username as username,
+                    FirstName as first_name,
+                    LastName as last_name,
+                    Email as email,
+                    Status as status,
+                    CreatedDate as created_at,
+                    (SELECT COUNT(*) FROM customers WHERE Sales = users.Username) as assigned_customers,
+                    (SELECT COUNT(*) FROM customers WHERE Sales = users.Username AND COALESCE(CustomerGrade, 'D') = 'A') as grade_a_customers,
+                    (SELECT COUNT(*) FROM customers WHERE Sales = users.Username AND COALESCE(CustomerTemperature, 'WARM') = 'HOT') as hot_customers
                 FROM users 
-                WHERE role = 'sales' AND status = 'active'
-                ORDER BY assigned_customers ASC, username";
+                WHERE Role = 'Sales' AND Status = 1
+                ORDER BY assigned_customers ASC, Username";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
@@ -282,7 +282,7 @@ function assignCustomers($pdo) {
         $pdo->beginTransaction();
         
         // Verify sales user exists and is active
-        $userCheckSql = "SELECT username FROM users WHERE username = ? AND role = 'sales' AND status = 'active'";
+        $userCheckSql = "SELECT Username FROM users WHERE Username = ? AND Role = 'Sales' AND Status = 1";
         $userStmt = $pdo->prepare($userCheckSql);
         $userStmt->execute([$salesUsername]);
         if (!$userStmt->fetch()) {
@@ -294,15 +294,16 @@ function assignCustomers($pdo) {
         
         foreach ($customerCodes as $customerCode) {
             try {
-                // Check if customer exists and is unassigned
-                $checkSql = "SELECT CustomerCode FROM customers WHERE CustomerCode = ? AND (Sales IS NULL OR Sales = '')";
+                // Check if customer exists and is in distribution basket
+                $checkSql = "SELECT CustomerCode FROM customers WHERE CustomerCode = ? AND CartStatus = 'ตะกร้าแจก'";
                 $checkStmt = $pdo->prepare($checkSql);
                 $checkStmt->execute([$customerCode]);
                 
                 if ($checkStmt->fetch()) {
-                    // Assign customer
+                    // Assign customer and update CartStatus
                     $assignSql = "UPDATE customers SET 
                                      Sales = ?,
+                                     CartStatus = 'ลูกค้าแจกแล้ว',
                                      ModifiedDate = NOW()
                                   WHERE CustomerCode = ?";
                     $assignStmt = $pdo->prepare($assignSql);
@@ -310,7 +311,7 @@ function assignCustomers($pdo) {
                     
                     $successCount++;
                 } else {
-                    $errors[] = "Customer {$customerCode} not found or already assigned";
+                    $errors[] = "Customer {$customerCode} not found in distribution basket";
                 }
                 
             } catch (Exception $e) {
@@ -372,7 +373,7 @@ function bulkAssignCustomers($pdo) {
             }
             
             // Verify sales user
-            $userCheckSql = "SELECT username FROM users WHERE username = ? AND role = 'sales' AND status = 'active'";
+            $userCheckSql = "SELECT Username FROM users WHERE Username = ? AND Role = 'Sales' AND Status = 1";
             $userStmt = $pdo->prepare($userCheckSql);
             $userStmt->execute([$salesUsername]);
             if (!$userStmt->fetch()) {
@@ -384,9 +385,9 @@ function bulkAssignCustomers($pdo) {
                 continue;
             }
             
-            // Build query for this rule
+            // Build query for this rule - only from distribution basket
             $sql = "SELECT CustomerCode FROM customers 
-                    WHERE (Sales IS NULL OR Sales = '')";
+                    WHERE CartStatus = 'ตะกร้าแจก'";
             $params = [];
             
             if (!empty($grade) && in_array($grade, ['A', 'B', 'C', 'D'])) {
@@ -410,13 +411,14 @@ function bulkAssignCustomers($pdo) {
             $stmt->execute($params);
             $customers = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
-            // Assign customers
+            // Assign customers and update CartStatus
             $assignedCount = 0;
             foreach ($customers as $customerCode) {
                 $assignSql = "UPDATE customers SET 
                                  Sales = ?,
+                                 CartStatus = 'ลูกค้าแจกแล้ว',
                                  ModifiedDate = NOW()
-                              WHERE CustomerCode = ? AND (Sales IS NULL OR Sales = '')";
+                              WHERE CustomerCode = ? AND CartStatus = 'ตะกร้าแจก'";
                 $assignStmt = $pdo->prepare($assignSql);
                 if ($assignStmt->execute([$salesUsername, $customerCode])) {
                     $assignedCount++;
@@ -462,10 +464,10 @@ function autoDistributeCustomers($pdo) {
         
         // Get active sales users with current workload
         $salesSql = "SELECT 
-                        username,
-                        (SELECT COUNT(*) FROM customers WHERE Sales = users.username) as current_load
+                        Username as username,
+                        (SELECT COUNT(*) FROM customers WHERE Sales = users.Username) as current_load
                      FROM users 
-                     WHERE role = 'sales' AND status = 'active'
+                     WHERE Role = 'Sales' AND Status = 1
                      ORDER BY current_load ASC";
         
         $salesStmt = $pdo->prepare($salesSql);
@@ -476,9 +478,9 @@ function autoDistributeCustomers($pdo) {
             throw new Exception('No active sales users available');
         }
         
-        // Get unassigned customers (prioritize HOT and Grade A)
+        // Get customers from distribution basket (prioritize HOT and Grade A)
         $customersSql = "SELECT CustomerCode FROM customers 
-                         WHERE (Sales IS NULL OR Sales = '')
+                         WHERE CartStatus = 'ตะกร้าแจก'
                          ORDER BY 
                              CASE COALESCE(CustomerGrade, 'D') WHEN 'A' THEN 1 WHEN 'B' THEN 2 WHEN 'C' THEN 3 ELSE 4 END,
                              " . ($prioritizeHot ? "CASE COALESCE(CustomerTemperature, 'WARM') WHEN 'HOT' THEN 1 WHEN 'WARM' THEN 2 ELSE 3 END," : "") . "
@@ -504,11 +506,12 @@ function autoDistributeCustomers($pdo) {
                 }
                 
                 if ($assignments[$salesUser['username']] < $maxPerSales) {
-                    // Assign customer
+                    // Assign customer and update CartStatus
                     $assignSql = "UPDATE customers SET 
                                      Sales = ?,
+                                     CartStatus = 'ลูกค้าแจกแล้ว',
                                      ModifiedDate = NOW()
-                                  WHERE CustomerCode = ? AND (Sales IS NULL OR Sales = '')";
+                                  WHERE CustomerCode = ? AND CartStatus = 'ตะกร้าแจก'";
                     $assignStmt = $pdo->prepare($assignSql);
                     
                     if ($assignStmt->execute([$salesUser['username'], $customerCode])) {
@@ -634,7 +637,7 @@ function reassignCustomer($pdo) {
     
     try {
         // Verify sales user exists and is active
-        $userCheckSql = "SELECT username FROM users WHERE username = ? AND role = 'sales' AND status = 'active'";
+        $userCheckSql = "SELECT Username FROM users WHERE Username = ? AND Role = 'Sales' AND Status = 1";
         $userStmt = $pdo->prepare($userCheckSql);
         $userStmt->execute([$newSalesUsername]);
         if (!$userStmt->fetch()) {
@@ -651,9 +654,10 @@ function reassignCustomer($pdo) {
             throw new Exception('Customer not found');
         }
         
-        // Reassign customer
+        // Reassign customer (maintain CartStatus as assigned)
         $reassignSql = "UPDATE customers SET 
                            Sales = ?,
+                           CartStatus = 'ลูกค้าแจกแล้ว',
                            ModifiedDate = NOW()
                         WHERE CustomerCode = ?";
         
@@ -691,9 +695,10 @@ function moveToWaitingBasket($pdo) {
     }
     
     try {
-        // Remove assignment (move to waiting basket)
+        // Remove assignment (move back to waiting basket)
         $sql = "UPDATE customers SET 
                    Sales = NULL,
+                   CartStatus = 'ตะกร้ารอ',
                    ModifiedDate = NOW()
                 WHERE CustomerCode = ?";
         

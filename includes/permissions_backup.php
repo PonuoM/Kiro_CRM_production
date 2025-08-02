@@ -255,9 +255,10 @@ class Permissions {
             $items[] = ['url' => 'daily_tasks_demo.php', 'title' => 'งานประจำวัน', 'icon' => '📅'];
         }
         
-        if (self::hasPermission('call_history')) {
-            $items[] = ['url' => 'call_history_demo.php', 'title' => 'ประวัติการโทร', 'icon' => '📞'];
-        }
+        // Call History - ถูกลบออกตามคำสั่ง (2025-07-29)
+        // if (self::hasPermission('call_history')) {
+        //     $items[] = ['url' => 'call_history_selector.php', 'title' => 'ประวัติการโทร', 'icon' => '📞'];
+        // }
         
         if (self::hasPermission('order_history')) {
             $items[] = ['url' => 'order_history_demo.php', 'title' => 'ประวัติคำสั่งซื้อ', 'icon' => '🛒'];

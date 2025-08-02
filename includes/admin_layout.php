@@ -20,10 +20,10 @@ $currentRole = $GLOBALS['currentRole'] ?? $_SESSION['user_role'] ?? 'Unknown';
 $menuItems = $GLOBALS['menuItems'] ?? [
     // Basic fallback menu for pages that don't use permissions
     ['url' => 'dashboard.php', 'title' => 'แดชบอร์ด', 'icon' => 'fas fa-tachometer-alt'],
-    ['url' => 'customer_list_demo.php', 'title' => 'รายชื่อลูกค้า', 'icon' => 'fas fa-users'],
+    ['url' => 'customer_list_dynamic.php', 'title' => 'รายชื่อลูกค้า', 'icon' => 'fas fa-users'],
     ['url' => 'order_history_demo.php', 'title' => 'ประวัติคำสั่งซื้อ', 'icon' => '🛒'],
     // ['url' => 'daily_tasks_demo.php', 'title' => 'งานประจำวัน', 'icon' => '📅'], // ลบออกแล้ว
-    ['url' => 'call_history_demo.php', 'title' => 'ประวัติการโทร', 'icon' => '📞'],
+    // ['url' => 'call_history_selector.php', 'title' => 'ประวัติการโทร', 'icon' => '📞'], // ลบออกตามคำสั่ง (2025-07-29)
     
     // Admin Tools
     ['url' => 'admin/import_customers.php', 'title' => 'นำเข้าลูกค้า', 'icon' => '📥'],

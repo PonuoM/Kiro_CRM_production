@@ -7,6 +7,7 @@
 session_start();
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/CallLog.php';
+require_once __DIR__ . '/../../includes/customer_intelligence.php';
 
 // Set JSON response header
 header('Content-Type: application/json; charset=utf-8');
@@ -92,6 +93,18 @@ function handleCreateCallLog($callLog) {
             // Log activity
             logActivity('CREATE_CALL_LOG', "Call log created for customer: {$callData['CustomerCode']}");
             
+            // Auto-trigger: Update customer intelligence after call log creation
+            try {
+                $customerCode = $callData['CustomerCode'];
+                if (!empty($customerCode)) {
+                    updateCustomerIntelligenceAuto($customerCode);
+                    error_log("Customer intelligence updated for {$customerCode} after call log creation");
+                }
+            } catch (Exception $e) {
+                error_log("Failed to update customer intelligence: " . $e->getMessage());
+                // Continue with call log creation success even if intelligence update fails
+            }
+            
             sendJsonResponse([
                 'success' => true, 
                 'message' => 'บันทึกการโทรสำเร็จ',
@@ -134,6 +147,10 @@ function handleGetCallLogs($callLog) {
             if ($dateTo) $filters['date_to'] = $dateTo;
             if ($callStatus) $filters['call_status'] = $callStatus;
             if ($talkStatus) $filters['talk_status'] = $talkStatus;
+            
+            // Add created_by filter (for Admin/Supervisor view)
+            $createdBy = $_GET['created_by'] ?? '';
+            if ($createdBy) $filters['created_by'] = $createdBy;
             
             $callLogs = $callLog->getCallLogsByCustomer($customerCode, $filters, 'CallDate DESC', $limit, $offset);
             $totalCount = $callLog->countCallLogsByCustomer($customerCode, $filters);

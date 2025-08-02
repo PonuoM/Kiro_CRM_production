@@ -130,9 +130,9 @@ function getCustomersWithTimeRemaining($pdo, $canViewAll, $currentUser, $limit, 
                     WHEN CustomerStatus = 'ลูกค้าใหม่' AND AssignDate IS NULL THEN 
                         7 - DATEDIFF(CURDATE(), DATE(CreatedDate)) -- Unassigned new customers expire in 7 days
                     WHEN CustomerStatus = 'ลูกค้าติดตาม' AND LastContactDate IS NOT NULL THEN 
-                        14 - DATEDIFF(CURDATE(), DATE(LastContactDate)) -- Follow up customers expire in 14 days from last contact
+                        90 - DATEDIFF(CURDATE(), DATE(LastContactDate)) -- Follow up customers expire in 90 days from last contact
                     WHEN CustomerStatus = 'ลูกค้าติดตาม' AND LastContactDate IS NULL THEN 
-                        14 - DATEDIFF(CURDATE(), DATE(COALESCE(AssignDate, CreatedDate)))
+                        90 - DATEDIFF(CURDATE(), DATE(COALESCE(AssignDate, CreatedDate)))
                     WHEN CustomerStatus = 'ลูกค้าเก่า' THEN 
                         90 - DATEDIFF(CURDATE(), DATE(COALESCE(LastContactDate, AssignDate, CreatedDate)))
                     ELSE 

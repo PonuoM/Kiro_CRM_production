@@ -96,11 +96,14 @@ class Permissions {
             session_start();
         }
         
-        if (!isset($_SESSION['user_role'])) {
+        // Check for user_role first, then fall back to role
+        $userRole = $_SESSION['user_role'] ?? $_SESSION['role'] ?? null;
+        
+        if (!$userRole) {
             return false;
         }
         
-        $role = strtolower($_SESSION['user_role']);
+        $role = strtolower($userRole);
         return self::$rolePermissions[$role][$permission] ?? false;
     }
     
@@ -123,7 +126,17 @@ class Permissions {
     }
     
     /**
-     * Check if user is logged in
+     * Check if user is logged in (without redirect)
+     */
+    public static function isLoggedIn() {
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+        return isset($_SESSION['user_id']);
+    }
+    
+    /**
+     * Check if user is logged in and redirect if not
      */
     public static function requireLogin($redirectUrl = null) {
         if (session_status() == PHP_SESSION_NONE) {
@@ -328,13 +341,14 @@ class Permissions {
         //     $menuItems[] = ['url' => 'daily_tasks_demo.php', 'title' => 'งานประจำวัน', 'icon' => 'fas fa-tasks'];
         // }
         
-        if (self::hasPermission('call_history')) {
-            $menuItems[] = ['url' => 'call_history_demo.php', 'title' => 'ประวัติการโทร', 'icon' => 'fas fa-phone'];
-        }
+        // Call History - ถูกลบออกตามคำสั่ง (2025-07-29)
+        // if (self::hasPermission('call_history')) {
+        //     $menuItems[] = ['url' => 'call_history_selector.php', 'title' => 'ประวัติการโทร', 'icon' => 'fas fa-phone'];
+        // }
         
         // Admin tools - only admin
         if (self::hasPermission('import_customers')) {
-            $menuItems[] = ['url' => 'admin/import_customers.php', 'title' => 'นำเข้าลูกค้า', 'icon' => 'fas fa-file-import'];
+            $menuItems[] = ['url' => 'admin/enhanced_import_customers_with_preview.php', 'title' => 'นำเข้าลูกค้า', 'icon' => 'fas fa-file-import'];
         }
         
         if (self::hasPermission('user_management')) {

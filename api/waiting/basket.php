@@ -118,39 +118,39 @@ function getWaitingDashboard($pdo) {
         // Get summary statistics for waiting basket
         $stats = [];
         
-        // Total customers in waiting (unassigned)
-        $waitingSql = "SELECT COUNT(*) as count FROM customers WHERE Sales IS NULL OR Sales = ''";
+        // Total customers in waiting basket
+        $waitingSql = "SELECT COUNT(*) as count FROM customers WHERE CartStatus = 'ตะกร้ารอ'";
         $stmt = $pdo->prepare($waitingSql);
         $stmt->execute();
         $stats['total_waiting'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // High priority customers (Grade A or HOT)
+        // High priority customers (Grade A or HOT) in waiting basket
         $prioritySql = "SELECT COUNT(*) as count FROM customers 
-                       WHERE (Sales IS NULL OR Sales = '') 
+                       WHERE CartStatus = 'ตะกร้ารอ' 
                        AND (COALESCE(CustomerGrade, 'D') = 'A' OR COALESCE(CustomerTemperature, 'WARM') = 'HOT')";
         $stmt = $pdo->prepare($prioritySql);
         $stmt->execute();
         $stats['high_priority'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // COLD customers needing attention
+        // COLD customers in waiting basket needing attention
         $coldSql = "SELECT COUNT(*) as count FROM customers 
-                   WHERE (Sales IS NULL OR Sales = '') 
+                   WHERE CartStatus = 'ตะกร้ารอ' 
                    AND COALESCE(CustomerTemperature, 'WARM') = 'COLD'";
         $stmt = $pdo->prepare($coldSql);
         $stmt->execute();
         $stats['cold_customers'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // Customers with no recent contact (30+ days)
+        // Customers in waiting basket with no recent contact (30+ days)
         $stagnantSql = "SELECT COUNT(*) as count FROM customers 
-                       WHERE (Sales IS NULL OR Sales = '') 
+                       WHERE CartStatus = 'ตะกร้ารอ' 
                        AND (LastContactDate IS NULL OR LastContactDate < DATE_SUB(CURDATE(), INTERVAL 30 DAY))";
         $stmt = $pdo->prepare($stagnantSql);
         $stmt->execute();
         $stats['stagnant'] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // New customers (added in last 7 days)
+        // New customers in waiting basket (added in last 7 days)
         $newSql = "SELECT COUNT(*) as count FROM customers 
-                  WHERE (Sales IS NULL OR Sales = '') 
+                  WHERE CartStatus = 'ตะกร้ารอ' 
                   AND CreatedDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
         $stmt = $pdo->prepare($newSql);
         $stmt->execute();
@@ -201,7 +201,7 @@ function getWaitingCustomers($pdo) {
                         ELSE DATEDIFF(CURDATE(), LastContactDate)
                     END as DaysSinceContact
                 FROM customers 
-                WHERE (Sales IS NULL OR Sales = '')";
+                WHERE CartStatus = 'ตะกร้ารอ'";
         
         $params = [];
         
@@ -291,7 +291,7 @@ function getPriorityCustomers($pdo) {
                         ELSE 'Recent'
                     END as ContactStatus
                 FROM customers 
-                WHERE (Sales IS NULL OR Sales = '')
+                WHERE CartStatus = 'ตะกร้ารอ'
                 AND (
                     COALESCE(CustomerGrade, 'D') = 'A' 
                     OR COALESCE(CustomerTemperature, 'WARM') = 'HOT'
@@ -334,7 +334,7 @@ function getWaitingStats($pdo) {
                         COUNT(*) as count,
                         AVG(COALESCE(TotalPurchase, 0)) as avg_purchase
                      FROM customers 
-                     WHERE Sales IS NULL OR Sales = ''
+                     WHERE CartStatus = 'ตะกร้ารอ'
                      GROUP BY COALESCE(CustomerGrade, 'D')
                      ORDER BY grade";
         $stmt = $pdo->prepare($gradeSql);
@@ -350,7 +350,7 @@ function getWaitingStats($pdo) {
                            ELSE DATEDIFF(CURDATE(), LastContactDate)
                        END) as avg_days_no_contact
                     FROM customers 
-                    WHERE Sales IS NULL OR Sales = ''
+                    WHERE CartStatus = 'ตะกร้ารอ'
                     GROUP BY COALESCE(CustomerTemperature, 'WARM')
                     ORDER BY temperature";
         $stmt = $pdo->prepare($tempSql);
@@ -368,7 +368,7 @@ function getWaitingStats($pdo) {
                           END as contact_category,
                           COUNT(*) as count
                        FROM customers 
-                       WHERE Sales IS NULL OR Sales = ''
+                       WHERE CartStatus = 'ตะกร้ารอ'
                        GROUP BY contact_category
                        ORDER BY count DESC";
         $stmt = $pdo->prepare($contactSql);
@@ -380,7 +380,7 @@ function getWaitingStats($pdo) {
                          CustomerStatus,
                          COUNT(*) as count
                       FROM customers 
-                      WHERE Sales IS NULL OR Sales = ''
+                      WHERE CartStatus = 'ตะกร้ารอ'
                       AND CustomerStatus IS NOT NULL
                       GROUP BY CustomerStatus
                       ORDER BY count DESC
@@ -482,13 +482,14 @@ function moveToDistribution($pdo) {
         
         foreach ($customerCodes as $customerCode) {
             try {
-                // Verify customer exists and is in waiting basket
-                $checkSql = "SELECT CustomerCode FROM customers WHERE CustomerCode = ? AND (Sales IS NULL OR Sales = '')";
-                $checkStmt = $pdo->prepare($checkSql);
-                $checkStmt->execute([$customerCode]);
+                // Move customer from waiting basket to distribution basket
+                $moveToDistributionSql = "UPDATE customers SET 
+                                             CartStatus = 'ตะกร้าแจก',
+                                             ModifiedDate = NOW()
+                                          WHERE CustomerCode = ? AND CartStatus = 'ตะกร้ารอ'";
+                $moveStmt = $pdo->prepare($moveToDistributionSql);
                 
-                if ($checkStmt->fetch()) {
-                    // Customer is already in waiting/distribution basket
+                if ($moveStmt->execute([$customerCode]) && $moveStmt->rowCount() > 0) {
                     $successCount++;
                 } else {
                     $errors[] = "Customer {$customerCode} not found in waiting basket";
@@ -542,18 +543,19 @@ function assignFromWaiting($pdo) {
         }
         
         // Verify customer is in waiting basket
-        $customerCheckSql = "SELECT CustomerCode FROM customers WHERE CustomerCode = ? AND (Sales IS NULL OR Sales = '')";
+        $customerCheckSql = "SELECT CustomerCode FROM customers WHERE CustomerCode = ? AND CartStatus = 'ตะกร้ารอ'";
         $customerStmt = $pdo->prepare($customerCheckSql);
         $customerStmt->execute([$customerCode]);
         if (!$customerStmt->fetch()) {
             throw new Exception('Customer not found in waiting basket');
         }
         
-        // Assign customer
+        // Assign customer directly from waiting basket
         $assignSql = "UPDATE customers SET 
                          Sales = ?,
+                         CartStatus = 'ลูกค้าแจกแล้ว',
                          ModifiedDate = NOW()
-                      WHERE CustomerCode = ?";
+                      WHERE CustomerCode = ? AND CartStatus = 'ตะกร้ารอ'";
         
         $stmt = $pdo->prepare($assignSql);
         $stmt->execute([$salesUsername, $customerCode]);
@@ -588,11 +590,11 @@ function updateWaitingStatus($pdo) {
     }
     
     try {
-        // Update customer status
+        // Update customer status (only for customers in waiting basket)
         $sql = "UPDATE customers SET 
                    CustomerStatus = ?,
                    ModifiedDate = NOW()
-                WHERE CustomerCode = ? AND (Sales IS NULL OR Sales = '')";
+                WHERE CustomerCode = ? AND CartStatus = 'ตะกร้ารอ'";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$newStatus, $customerCode]);

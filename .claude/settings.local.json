@@ -24,7 +24,12 @@
       "Bash(done)",
       "Bash(cat:*)",
       "WebFetch(domain:www.prima49.com)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(md-tree:*)",
+      "Bash(crontab:*)",
+      "Bash(sudo crontab:*)",
+      "Bash(/c/xampp/php/php.exe run_cart_status_fix.php)",
+      "Bash(/c/xampp/php/php.exe simple_debug.php)"
     ],
     "deny": []
   }

@@ -47,7 +47,7 @@ try {
     echo "<h4>📋 Business Rules:</h4>";
     echo "<ul>";
     echo "<li><strong>ลูกค้าใหม่เลย 30 วัน:</strong> ส่งกลับ Pool</li>";
-    echo "<li><strong>ลูกค้าติดตามเลย 14 วัน:</strong> เปลี่ยน Sales หรือส่งกลับ Pool</li>";
+    echo "<li><strong>ลูกค้าติดตามเลย 90 วัน:</strong> เปลี่ยน Sales หรือส่งกลับ Pool</li>";
     echo "<li><strong>ลูกค้าเก่าไม่ติดต่อเลย 90 วัน:</strong> เปลี่ยนเป็น FROZEN</li>";
     echo "</ul>";
     
@@ -60,10 +60,10 @@ try {
             'action_desc' => 'ส่งกลับ Pool'
         ],
         'follow_overdue' => [
-            'description' => 'ลูกค้าติดตามเลย 14 วัน',
-            'query' => "SELECT COUNT(*) FROM customers WHERE CustomerStatus = 'ลูกค้าติดตาม' AND LastContactDate IS NOT NULL AND DATEDIFF(CURDATE(), LastContactDate) > 14",
-            'action_query' => "UPDATE customers SET CustomerStatus = 'ในตระกร้า', Sales = NULL, AssignDate = NULL WHERE CustomerStatus = 'ลูกค้าติดตาม' AND LastContactDate IS NOT NULL AND DATEDIFF(CURDATE(), LastContactDate) BETWEEN 15 AND 30",
-            'action_desc' => 'ส่งกลับ Pool (14-30 วัน)'
+            'description' => 'ลูกค้าติดตามเลย 90 วัน',
+            'query' => "SELECT COUNT(*) FROM customers WHERE CustomerStatus = 'ลูกค้าติดตาม' AND LastContactDate IS NOT NULL AND DATEDIFF(CURDATE(), LastContactDate) > 90",
+            'action_query' => "UPDATE customers SET CustomerStatus = 'ในตระกร้า', Sales = NULL, AssignDate = NULL WHERE CustomerStatus = 'ลูกค้าติดตาม' AND LastContactDate IS NOT NULL AND DATEDIFF(CURDATE(), LastContactDate) BETWEEN 91 AND 120",
+            'action_desc' => 'ส่งกลับ Pool (90-120 วัน)'
         ],
         'old_frozen' => [
             'description' => 'ลูกค้าเก่าไม่ติดต่อเลย 90 วัน',

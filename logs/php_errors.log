@@ -1,0 +1,8 @@
+[31-Jul-2025 09:57:21 Asia/Bangkok] Database connection attempt 1 failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[31-Jul-2025 09:57:26 Asia/Bangkok] Database connection attempt 2 failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[31-Jul-2025 09:57:32 Asia/Bangkok] Database connection attempt 3 failed: SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it
+[31-Jul-2025 09:57:32 Asia/Bangkok] CRITICAL: Database connection failed after 3 attempts
+[01-Aug-2025 15:38:49 Asia/Bangkok] Login Page CSRF Debug - Generated: dbd1777110c52d160cb776d32523e13337e9a3ed3a4dfca877bf1ab324ff3a79
+[01-Aug-2025 15:38:49 Asia/Bangkok] Login Page CSRF Debug - Session ID: hasdg97uuqhfhhb5cuj0vtc5m3
+[01-Aug-2025 15:39:16 Asia/Bangkok] Login Page CSRF Debug - Generated: dbd1777110c52d160cb776d32523e13337e9a3ed3a4dfca877bf1ab324ff3a79
+[01-Aug-2025 15:39:16 Asia/Bangkok] Login Page CSRF Debug - Session ID: hasdg97uuqhfhhb5cuj0vtc5m3

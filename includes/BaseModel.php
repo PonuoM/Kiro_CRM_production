@@ -269,10 +269,23 @@ abstract class BaseModel {
         try {
             $sql = "SHOW COLUMNS FROM {$this->table} LIKE ?";
             $result = $this->db->queryOne($sql, [$columnName]);
+            error_log("Column check for {$columnName} in {$this->table}: " . ($result ? 'FOUND' : 'NOT FOUND'));
             return !empty($result);
         } catch (Exception $e) {
+            error_log("Column check error: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Get last database error for debugging
+     * @return string
+     */
+    public function getLastError() {
+        if (method_exists($this->db, 'getLastError')) {
+            return $this->db->getLastError();
+        }
+        return 'No error information available';
     }
 }
 ?>

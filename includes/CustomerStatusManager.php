@@ -143,9 +143,12 @@ class CustomerStatusManager extends BaseModel {
             $updateData = [
                 'CustomerStatus' => 'ลูกค้าเก่า', // Bought = becomes old customer
                 'ModifiedDate' => date('Y-m-d H:i:s'),
-                'ModifiedBy' => getCurrentUsername() ?? 'system',
-                'LastPurchaseDate' => date('Y-m-d H:i:s')
+                'ModifiedBy' => getCurrentUsername() ?? 'system'
             ];
+            
+            // Skip LastPurchaseDate for now - column doesn't exist in current schema
+            // TODO: Add LastPurchaseDate column to customers table if needed
+            error_log("CustomerStatusManager: updateData = " . print_r($updateData, true));
             
             return $customer->updateCustomer($customerCode, $updateData);
             

@@ -79,6 +79,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
             --input: #e2e8f0;
             --ring: #76BC43;
             --sidebar-width: 280px;
+            --sidebar-collapsed-width: 70px;
         }
 
         * {
@@ -101,12 +102,17 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
             top: 0;
             left: 0;
             height: 100vh;
-            width: var(--sidebar-width);
+            width: var(--sidebar-collapsed-width);
             background-color: var(--card);
             border-right: 1px solid var(--border);
             z-index: 1000;
             overflow-y: auto;
-            transition: transform 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar:hover,
+        .sidebar.expanded {
+            width: var(--sidebar-width);
         }
 
         .sidebar-header {
@@ -124,11 +130,25 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            overflow: hidden;
         }
 
         .sidebar-brand:hover {
             color: white;
             text-decoration: none;
+        }
+
+        .sidebar-brand .brand-text {
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar:hover .sidebar-brand .brand-text,
+        .sidebar.expanded .sidebar-brand .brand-text {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .sidebar-nav {
@@ -147,6 +167,16 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
             letter-spacing: 0.05em;
             padding: 0 1rem;
             margin-bottom: 0.5rem;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar:hover .nav-section-title,
+        .sidebar.expanded .nav-section-title {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .nav-item {
@@ -164,6 +194,20 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
             transition: all 0.2s ease;
             font-weight: 500;
             position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link .nav-text {
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar:hover .nav-link .nav-text,
+        .sidebar.expanded .nav-link .nav-text {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .nav-link:hover {
@@ -187,9 +231,10 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
 
         /* Main Content */
         .main-content {
-            margin-left: var(--sidebar-width);
+            margin-left: var(--sidebar-collapsed-width);
             min-height: 100vh;
             background-color: var(--muted);
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .main-header {
@@ -211,6 +256,19 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
             border-top: 1px solid var(--border);
             margin-top: auto;
             background-color: var(--muted);
+            overflow: hidden;
+        }
+
+        .user-info .user-details {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar:hover .user-info .user-details,
+        .sidebar.expanded .user-info .user-details {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         .user-avatar {
@@ -229,6 +287,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
         .user-details {
             flex: 1;
             min-width: 0;
+            white-space: nowrap;
         }
 
         .user-name {
@@ -395,7 +454,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
         <div class="sidebar-header">
             <a href="<?php echo $basePath; ?>dashboard.php" class="sidebar-brand">
                 <i class="fas fa-chart-line"></i>
-                <span>Kiro CRM</span>
+                <span class="brand-text">Kiro CRM</span>
             </a>
         </div>
 
@@ -411,7 +470,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
                         <div class="nav-icon">
                             <i class="<?php echo $item['icon'] ?? 'fas fa-tachometer-alt'; ?>"></i>
                         </div>
-                        <span><?php echo $item['title']; ?></span>
+                        <span class="nav-text"><?php echo $item['title']; ?></span>
                     </a>
                 </div>
                 <?php endforeach; ?>
@@ -428,7 +487,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
                         <div class="nav-icon">
                             <i class="<?php echo $item['icon'] ?? 'fas fa-users'; ?>"></i>
                         </div>
-                        <span><?php echo $item['title']; ?></span>
+                        <span class="nav-text"><?php echo $item['title']; ?></span>
                     </a>
                 </div>
                 <?php endforeach; ?>
@@ -445,7 +504,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
                         <div class="nav-icon">
                             <i class="<?php echo $item['icon'] ?? 'fas fa-cog'; ?>"></i>
                         </div>
-                        <span><?php echo $item['title']; ?></span>
+                        <span class="nav-text"><?php echo $item['title']; ?></span>
                     </a>
                 </div>
                 <?php endforeach; ?>
@@ -462,7 +521,7 @@ function renderMainLayout($pageTitle, $content, $additionalCSS = '', $additional
                         <div class="nav-icon">
                             <i class="<?php echo $item['icon'] ?? 'fas fa-chart-line'; ?>"></i>
                         </div>
-                        <span><?php echo $item['title']; ?></span>
+                        <span class="nav-text"><?php echo $item['title']; ?></span>
                     </a>
                 </div>
                 <?php endforeach; ?>

@@ -96,6 +96,30 @@ $additionalCSS = '
         .temp-WARM { background-color: #f97316; color: white; }
         .temp-COLD { background-color: #6b7280; color: white; }
         
+        /* Sales User Selection Styles */
+        .list-group-item.list-group-item-action {
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .list-group-item.list-group-item-action:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+            transform: translateY(-1px);
+        }
+        
+        .list-group-item.list-group-item-action.active {
+            background-color: #007bff !important;
+            border-color: #0056b3 !important;
+            color: white !important;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        }
+        
+        .list-group-item.list-group-item-action.active h6,
+        .list-group-item.list-group-item-action.active small {
+            color: white !important;
+        }
+        
         .assignment-section {
             background: var(--card);
             border-radius: 0.75rem;
@@ -138,6 +162,86 @@ $additionalCSS = '
         .form-select:focus, .form-control:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(118, 188, 67, 0.2);
+        }
+        
+        /* Table styles for customer display */
+        .customers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .customers-table th,
+        .customers-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        
+        .customers-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-top: 1px solid #dee2e6;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .customers-table tbody tr:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .customers-table tbody tr.selected {
+            background-color: rgba(118, 188, 67, 0.1);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .checkbox-column {
+            width: 50px;
+            text-align: center;
+        }
+        
+        .customer-code-column {
+            width: 100px;
+            font-weight: 600;
+        }
+        
+        .customer-name-column {
+            min-width: 180px;
+        }
+        
+        .phone-column {
+            width: 130px;
+        }
+        
+        .grade-column,
+        .temp-column {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .status-column {
+            width: 120px;
+        }
+        
+        .purchase-column {
+            width: 120px;
+            text-align: right;
+        }
+        
+        .actions-column {
+            width: 80px;
+            text-align: center;
         }
     </style>
 ';
@@ -289,6 +393,9 @@ ob_start();
                         </div>
                         <div class="col-md-6">
                             <h6>เลือกพนักงานขาย</h6>
+                            <div id="selectedSalesUserInfo" class="alert alert-info mb-3" style="display: none;">
+                                <i class="fas fa-user"></i> <strong>เลือก:</strong> <span id="selectedSalesUserName">-</span>
+                            </div>
                             <div id="salesUsersList"></div>
                             <div class="mt-3">
                                 <button class="btn btn-success" onclick="assignSelectedCustomers()" id="assignButton" disabled>
@@ -435,45 +542,100 @@ $additionalJS = <<<'JS'
                 return;
             }
 
-            let html = `<div class="row">`;
+            let html = `
+                <div class="table-container">
+                    <table class="customers-table table table-hover">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-column">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" title="เลือก/ยกเลิกทั้งหมด">
+                                </th>
+                                <th class="customer-code-column">รหัสลูกค้า</th>
+                                <th class="customer-name-column">ชื่อลูกค้า</th>
+                                <th class="phone-column">เบอร์โทร</th>
+                                <th class="grade-column">เกรด</th>
+                                <th class="temp-column">อุณหภูมิ</th>
+                                <th class="status-column">สถานะ</th>
+                                <th class="purchase-column">ยอดซื้อ</th>
+                                <th class="actions-column">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             
             customers.forEach(customer => {
                 const isSelected = selectedCustomers.has(customer.CustomerCode);
-                const selectedClass = isSelected ? 'border-primary bg-light' : '';
+                const selectedClass = isSelected ? 'selected' : '';
                 
                 html += `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="customer-card ${selectedClass}" onclick="toggleCustomerSelection('${customer.CustomerCode}')">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0">${customer.CustomerName}</h6>
-                                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleCustomerSelection('${customer.CustomerCode}')">
+                    <tr class="${selectedClass}" onclick="toggleCustomerSelection('${customer.CustomerCode}')" data-customer-code="${customer.CustomerCode}">
+                        <td class="checkbox-column">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                                   onclick="event.stopPropagation(); toggleCustomerSelection('${customer.CustomerCode}')"
+                                   class="customer-checkbox">
+                        </td>
+                        <td class="customer-code-column">
+                            <strong>${customer.CustomerCode}</strong>
+                        </td>
+                        <td class="customer-name-column">
+                            <div>
+                                <strong>${customer.CustomerName}</strong>
+                                <br><small class="text-muted">${customer.CustomerStatus}</small>
                             </div>
-                            <p class="text-muted mb-1">รหัส: ${customer.CustomerCode}</p>
-                            <p class="text-muted mb-2">โทร: ${customer.CustomerTel || 'ไม่ระบุ'}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="grade-badge grade-${customer.CustomerGrade}">${customer.CustomerGrade}</span>
-                                    <span class="temp-badge temp-${customer.CustomerTemperature} ms-1">${customer.CustomerTemperature}</span>
-                                </div>
-                                <small class="text-muted">฿${parseFloat(customer.TotalPurchase).toLocaleString()}</small>
-                            </div>
-                            <div class="mt-2">
-                                <small class="text-muted">สถานะ: ${customer.CustomerStatus}</small>
-                            </div>
-                        </div>
-                    </div>
+                        </td>
+                        <td class="phone-column">
+                            ${customer.CustomerTel || '<span class="text-muted">ไม่ระบุ</span>'}
+                        </td>
+                        <td class="grade-column">
+                            <span class="grade-badge grade-${customer.CustomerGrade}">${customer.CustomerGrade}</span>
+                        </td>
+                        <td class="temp-column">
+                            <span class="temp-badge temp-${customer.CustomerTemperature}">${customer.CustomerTemperature}</span>
+                        </td>
+                        <td class="status-column">
+                            <small>${customer.CustomerStatus}</small>
+                        </td>
+                        <td class="purchase-column">
+                            <strong>฿${parseFloat(customer.TotalPurchase).toLocaleString()}</strong>
+                        </td>
+                        <td class="actions-column">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); viewCustomerDetail('${customer.CustomerCode}')" 
+                                    title="ดูรายละเอียด">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
                 `;
             });
             
-            html += `</div>`;
-            html += `<div class="mt-3 text-center">
-                        <p class="text-muted">แสดง ${customers.length} รายการ | เลือกแล้ว ${selectedCustomers.size} รายการ</p>
-                        <button class="btn btn-outline-primary" onclick="selectAllVisible()">เลือกทั้งหมดในหน้านี้</button>
-                        <button class="btn btn-outline-secondary ms-2" onclick="clearSelection()">ยกเลิกการเลือก</button>
-                     </div>`;
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-0">
+                                แสดง <strong>${customers.length}</strong> รายการ | 
+                                เลือกแล้ว <strong><span id="selectedCount">${selectedCustomers.size}</span></strong> รายการ
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-outline-primary btn-sm" onclick="selectAllVisible()">
+                                <i class="fas fa-check-square"></i> เลือกทั้งหมดในหน้านี้
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm ms-2" onclick="clearSelection()">
+                                <i class="fas fa-square"></i> ยกเลิกการเลือก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
             
             container.innerHTML = html;
             updateSelectedCustomersList();
+            updateSelectAllCheckbox();
         }
 
         function toggleCustomerSelection(customerCode) {
@@ -482,24 +644,122 @@ $additionalJS = <<<'JS'
             } else {
                 selectedCustomers.add(customerCode);
             }
-            loadUnassignedCustomers(); // Refresh to update visual selection
+            
+            // Update visual selection without full reload
+            const row = document.querySelector(`tr[data-customer-code="${customerCode}"]`);
+            const checkbox = row.querySelector('.customer-checkbox');
+            
+            if (selectedCustomers.has(customerCode)) {
+                row.classList.add('selected');
+                checkbox.checked = true;
+            } else {
+                row.classList.remove('selected');
+                checkbox.checked = false;
+            }
+            
+            updateSelectedCount();
+            updateSelectedCustomersList();
             updateAssignButton();
+            updateSelectAllCheckbox();
+        }
+        
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const customerCheckboxes = document.querySelectorAll('.customer-checkbox');
+            
+            if (selectAllCheckbox.checked) {
+                // Select all visible customers
+                customerCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const customerCode = row.getAttribute('data-customer-code');
+                    selectedCustomers.add(customerCode);
+                    row.classList.add('selected');
+                    checkbox.checked = true;
+                });
+            } else {
+                // Deselect all visible customers
+                customerCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    const customerCode = row.getAttribute('data-customer-code');
+                    selectedCustomers.delete(customerCode);
+                    row.classList.remove('selected');
+                    checkbox.checked = false;
+                });
+            }
+            
+            updateSelectedCount();
+            updateSelectedCustomersList();
+            updateAssignButton();
+        }
+        
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const customerCheckboxes = document.querySelectorAll('.customer-checkbox');
+            
+            if (customerCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                return;
+            }
+            
+            const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
+            
+            if (checkedBoxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedBoxes.length === customerCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+        
+        function updateSelectedCount() {
+            const countElement = document.getElementById('selectedCount');
+            if (countElement) {
+                countElement.textContent = selectedCustomers.size;
+            }
+        }
+        
+        function viewCustomerDetail(customerCode) {
+            // Placeholder function for viewing customer details
+            alert(`ดูรายละเอียดลูกค้า: ${customerCode}`);
+            // TODO: Implement modal or redirect to customer detail page
         }
 
         function selectAllVisible() {
-            const checkboxes = document.querySelectorAll('.customer-card input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                const customerCode = checkbox.onchange.toString().match(/'([^']+)'/)[1];
+            const customerCheckboxes = document.querySelectorAll('.customer-checkbox');
+            customerCheckboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const customerCode = row.getAttribute('data-customer-code');
                 selectedCustomers.add(customerCode);
+                row.classList.add('selected');
+                checkbox.checked = true;
             });
-            loadUnassignedCustomers();
+            
+            updateSelectedCount();
+            updateSelectedCustomersList();
             updateAssignButton();
+            updateSelectAllCheckbox();
         }
 
         function clearSelection() {
             selectedCustomers.clear();
-            loadUnassignedCustomers();
+            
+            // Update visual selection
+            const customerCheckboxes = document.querySelectorAll('.customer-checkbox');
+            customerCheckboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                row.classList.remove('selected');
+                checkbox.checked = false;
+            });
+            
+            updateSelectedCount();
+            updateSelectedCustomersList();
             updateAssignButton();
+            updateSelectAllCheckbox();
         }
 
         function clearFilters() {
@@ -543,19 +803,31 @@ $additionalJS = <<<'JS'
         }
 
         function loadSalesUsers() {
+            console.log('Loading sales users...');
             fetch(apiPath + 'distribution/basket.php?action=sales_users')
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Sales users response:', data);
                     if (data.status === 'success') {
                         salesUsers = data.data;
+                        console.log('Sales users loaded:', salesUsers.length, 'users');
                         displaySalesUsers(data.data);
+                    } else {
+                        console.error('Error loading sales users:', data.error);
+                        document.getElementById('salesUsersList').innerHTML = 
+                            `<div class="alert alert-danger">เกิดข้อผิดพลาด: ${data.error}</div>`;
                     }
                 })
-                .catch(error => console.error('Error loading sales users:', error));
+                .catch(error => {
+                    console.error('Error loading sales users:', error);
+                    document.getElementById('salesUsersList').innerHTML = 
+                        '<div class="alert alert-danger">เกิดข้อผิดพลาดในการโหลดข้อมูลพนักงานขาย</div>';
+                });
         }
 
         function displaySalesUsers(users) {
             const container = document.getElementById('salesUsersList');
+            console.log('Displaying sales users:', users.length, 'users');
             
             if (users.length === 0) {
                 container.innerHTML = '<div class="alert alert-warning">ไม่มีพนักงานขายที่ใช้งานได้</div>';
@@ -569,7 +841,10 @@ $additionalJS = <<<'JS'
                 const selectedClass = isSelected ? 'active' : '';
                 
                 html += `
-                    <div class="list-group-item list-group-item-action ${selectedClass}" onclick="selectSalesUser('${user.username}')">
+                    <div class="list-group-item list-group-item-action ${selectedClass}" 
+                         onclick="selectSalesUser('${user.username}')" 
+                         style="cursor: pointer;"
+                         data-username="${user.username}">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="mb-1">${user.first_name} ${user.last_name}</h6>
@@ -586,12 +861,39 @@ $additionalJS = <<<'JS'
             
             html += '</div>';
             container.innerHTML = html;
+            console.log('Sales users displayed successfully');
+            
+            // Add event delegation for better reliability
+            const listGroup = container.querySelector('.list-group');
+            if (listGroup) {
+                listGroup.addEventListener('click', function(e) {
+                    const clickedItem = e.target.closest('.list-group-item');
+                    if (clickedItem && clickedItem.dataset.username) {
+                        selectSalesUser(clickedItem.dataset.username);
+                    }
+                });
+            }
         }
 
         function selectSalesUser(username) {
+            console.log('Selecting sales user:', username);
             selectedSalesUser = username;
+            
+            // Update display to show selection
             displaySalesUsers(salesUsers);
             updateAssignButton();
+            
+            // Show visual feedback
+            const selectedUser = salesUsers.find(user => user.username === username);
+            if (selectedUser) {
+                const infoElement = document.getElementById('selectedSalesUserInfo');
+                const nameElement = document.getElementById('selectedSalesUserName');
+                
+                nameElement.textContent = `${selectedUser.first_name} ${selectedUser.last_name} (@${username})`;
+                infoElement.style.display = 'block';
+                
+                console.log(`Selected: ${selectedUser.first_name} ${selectedUser.last_name} (@${username})`);
+            }
         }
 
         function updateAssignButton() {

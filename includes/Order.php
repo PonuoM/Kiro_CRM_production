@@ -55,7 +55,10 @@ class Order extends BaseModel {
             }
             
             // Store detailed products information as JSON if provided (if column exists)
+            $productsForItems = null; // เก็บไว้สำหรับ createOrderItems
             if (isset($orderData['products']) && is_array($orderData['products'])) {
+                $productsForItems = $orderData['products']; // เก็บไว้ใช้ภายหลัง
+                
                 // Check if ProductsDetail column exists
                 if ($this->columnExists('ProductsDetail')) {
                     $orderData['ProductsDetail'] = json_encode($orderData['products'], JSON_UNESCAPED_UNICODE);
@@ -63,28 +66,71 @@ class Order extends BaseModel {
                 unset($orderData['products']); // Remove from main data to avoid database error
             }
             
-            // Only include discount fields if columns exist
-            if (!$this->columnExists('DiscountAmount')) {
-                unset($orderData['DiscountAmount']);
-                unset($orderData['DiscountPercent']);
-                unset($orderData['DiscountRemarks']);
-                unset($orderData['SubtotalAmount']);
+            // ⚠️ IMPORTANT: Order.php should NOT override values that are already calculated
+            // The API has already done Direct Mapping, so don't set defaults that would override
+            
+            // Only set defaults for truly missing values (not zero values)
+            if (!isset($orderData['DiscountAmount'])) {
+                $orderData['DiscountAmount'] = 0.00;
+            }
+            if (!isset($orderData['DiscountPercent'])) {
+                $orderData['DiscountPercent'] = 0.00;
+            }
+            if (!isset($orderData['DiscountRemarks'])) {
+                $orderData['DiscountRemarks'] = '';
+            }
+            if (!isset($orderData['SubtotalAmount'])) {
+                $orderData['SubtotalAmount'] = 0.00;
+            }
+            if (!isset($orderData['Subtotal_amount2'])) {
+                $orderData['Subtotal_amount2'] = 0.00;
             }
             
+            // Log what we received to verify Direct Mapping is working
+            error_log("=== ORDER.PHP RECEIVED DATA ===");
+            error_log("Quantity: " . ($orderData['Quantity'] ?? 'NOT SET'));
+            error_log("SubtotalAmount (old): " . ($orderData['SubtotalAmount'] ?? 'NOT SET'));
+            error_log("Subtotal_amount2 (new): " . ($orderData['Subtotal_amount2'] ?? 'NOT SET'));
+            error_log("DiscountAmount: " . ($orderData['DiscountAmount'] ?? 'NOT SET'));
+            error_log("DiscountPercent: " . ($orderData['DiscountPercent'] ?? 'NOT SET'));
+            error_log("Price: " . ($orderData['Price'] ?? 'NOT SET'));
+            
+            error_log("Discount fields included with values - Amount: " . $orderData['DiscountAmount'] . ", Percent: " . $orderData['DiscountPercent']);
+            
+            error_log("Final order data before insert: " . print_r($orderData, true));
+            
             // Insert order
+            error_log("About to insert order with data: " . print_r($orderData, true));
             $orderId = $this->insert($orderData);
+            error_log("Insert result - Order ID: " . ($orderId ? $orderId : 'FALSE'));
             
             if (!$orderId) {
-                throw new Exception('Failed to create order');
+                // Get PDO error info
+                $pdo = $this->db->getConnection();
+                $errorInfo = $pdo->errorInfo();
+                error_log("PDO Error Info: " . print_r($errorInfo, true));
+                throw new Exception('Failed to create order - PDO Error: ' . implode(', ', $errorInfo));
             }
             
             // Update customer status after order using new business logic
-            require_once __DIR__ . '/CustomerStatusManager.php';
-            $statusManager = new CustomerStatusManager();
-            $updateResult = $statusManager->updateCustomerStatusAfterOrder($orderData['CustomerCode']);
+            try {
+                require_once __DIR__ . '/CustomerStatusManager.php';
+                $statusManager = new CustomerStatusManager();
+                $updateResult = $statusManager->updateCustomerStatusAfterOrder($orderData['CustomerCode']);
+                
+                if (!$updateResult) {
+                    error_log("Warning: Failed to update customer status after order, but order was created successfully");
+                }
+            } catch (Exception $e) {
+                error_log("Error updating customer status after order: " . $e->getMessage() . " - Order created successfully anyway");
+            }
             
-            if (!$updateResult) {
-                throw new Exception('Failed to update customer status');
+            // Create order items if we have products data
+            if ($productsForItems && is_array($productsForItems)) {
+                $itemsResult = $this->createOrderItems($orderData['DocumentNo'], $productsForItems);
+                if (!$itemsResult) {
+                    error_log("Warning: Failed to create order items, but order was created successfully");
+                }
             }
             
             // Create sales history record
@@ -99,6 +145,8 @@ class Order extends BaseModel {
             // Rollback transaction
             $this->rollback();
             error_log("Order creation failed: " . $e->getMessage());
+            error_log("Order creation error file: " . $e->getFile() . " line: " . $e->getLine());
+            error_log("Order data: " . print_r($orderData, true));
             return false;
         }
     }
@@ -435,7 +483,15 @@ class Order extends BaseModel {
             } else {
                 // Legacy single product format
                 $required = ['CustomerCode', 'Products', 'Quantity', 'Price'];
-                $missing = validateRequiredFields($orderData, $required);
+                
+                // Safe validation without external function (same as above)
+                $missing = [];
+                foreach ($required as $field) {
+                    if (!isset($orderData[$field]) || empty($orderData[$field])) {
+                        $missing[] = $field;
+                    }
+                }
+                
                 if (!empty($missing)) {
                     $errors[] = 'ข้อมูลที่จำเป็น: ' . implode(', ', $missing);
                 }
@@ -512,6 +568,82 @@ class Order extends BaseModel {
      */
     public function deleteOrder($orderId) {
         return $this->delete($orderId);
+    }
+    
+    /**
+     * Create order items for the order
+     * @param string $documentNo
+     * @param array $products
+     * @return bool
+     */
+    public function createOrderItems($documentNo, $products) {
+        try {
+            error_log("=== CREATING ORDER ITEMS ===");
+            error_log("DocumentNo: " . $documentNo);
+            error_log("Products: " . print_r($products, true));
+            
+            foreach ($products as $index => $product) {
+                $productCode = isset($product['code']) ? trim($product['code']) : '';
+                $productName = isset($product['name']) ? trim($product['name']) : '';
+                $quantity = (float)($product['quantity'] ?? 0);
+                $price = (float)($product['price'] ?? 0);
+                $lineTotal = $quantity * $price;
+                
+                // ถ้าไม่มี ProductCode ให้พยายามดึงจาก ProductName
+                if (empty($productCode) && !empty($productName)) {
+                    // ตัดเอา ProductCode จาก ProductName ถ้ามีรูปแบบ "CODE - NAME"
+                    if (strpos($productName, ' - ') !== false) {
+                        $parts = explode(' - ', $productName, 2);
+                        if (count($parts) == 2) {
+                            $productCode = trim($parts[0]);
+                            $productName = trim($parts[1]);
+                        }
+                    }
+                }
+                
+                $itemData = [
+                    'DocumentNo' => $documentNo,
+                    'ProductCode' => $productCode,
+                    'ProductName' => $productName,
+                    'UnitPrice' => $price,
+                    'Quantity' => $quantity,
+                    'LineTotal' => $lineTotal,
+                    'ItemDiscount' => 0.00,
+                    'ItemDiscountPercent' => 0.00,
+                    'CreatedBy' => getCurrentUsername() ?? 'system'
+                ];
+                
+                error_log("Creating order item " . ($index + 1) . ": " . print_r($itemData, true));
+                
+                // Insert order item
+                $sql = "INSERT INTO order_items (DocumentNo, ProductCode, ProductName, UnitPrice, Quantity, LineTotal, ItemDiscount, ItemDiscountPercent, CreatedBy) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                
+                $result = $this->execute($sql, [
+                    $itemData['DocumentNo'],
+                    $itemData['ProductCode'],
+                    $itemData['ProductName'],
+                    $itemData['UnitPrice'],
+                    $itemData['Quantity'],
+                    $itemData['LineTotal'],
+                    $itemData['ItemDiscount'],
+                    $itemData['ItemDiscountPercent'],
+                    $itemData['CreatedBy']
+                ]);
+                
+                if (!$result) {
+                    error_log("Failed to create order item: " . print_r($itemData, true));
+                    return false;
+                }
+            }
+            
+            error_log("=== ORDER ITEMS CREATED SUCCESSFULLY ===");
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error creating order items: " . $e->getMessage());
+            return false;
+        }
     }
 }
 ?>

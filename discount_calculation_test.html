@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบการคำนวณส่วนลด</title>
+    <style>
+        body {
+            font-family: 'Sarabun', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .result {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .error {
+            background-color: #ffe8e8;
+            color: red;
+        }
+        .success {
+            background-color: #e8f5e8;
+            color: green;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 ทดสอบการคำนวณส่วนลด</h1>
+        
+        <div class="test-section">
+            <h2>Test Case: 380 บาท ลด 80 บาท (21.05%)</h2>
+            
+            <div class="form-group">
+                <label>ยอดขายสินค้า (Subtotal):</label>
+                <input type="number" id="subtotal" value="380" step="0.01">
+            </div>
+            
+            <div class="form-group">
+                <label>ส่วนลด (บาท):</label>
+                <input type="number" id="discount-amount" value="80" step="0.01" onchange="calculateFromAmount()">
+            </div>
+            
+            <div class="form-group">
+                <label>ส่วนลด (%):</label>
+                <input type="number" id="discount-percent" value="" step="0.01" onchange="calculateFromPercent()">
+            </div>
+            
+            <div class="form-group">
+                <label>ยอดสุทธิ (Final Total):</label>
+                <input type="number" id="final-total" readonly style="background-color: #f8f9fa;">
+            </div>
+            
+            <button onclick="runTest()">คำนวณ</button>
+            <button onclick="resetTest()">รีเซ็ต</button>
+            
+            <div id="result" class="result" style="display: none;">
+                <h3>ผลการคำนวณ:</h3>
+                <table>
+                    <tr><th>รายการ</th><th>ค่าที่คาด</th><th>ค่าที่ได้</th><th>ผล</th></tr>
+                    <tr id="result-percent"><td>ส่วนลด (%)</td><td>21.05</td><td>-</td><td>-</td></tr>
+                    <tr id="result-total"><td>ยอดสุทธิ</td><td>300.00</td><td>-</td><td>-</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 ทดสอบหลายกรณี</h2>
+            <button onclick="runMultipleTests()">รันทดสอบหลายกรณี</button>
+            <div id="multiple-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global flag to prevent infinite loop during calculations
+        let isCalculating = false;
+
+        function calculateFromAmount() {
+            if (isCalculating) return;
+            
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discountAmount = parseFloat(document.getElementById('discount-amount').value) || 0;
+            
+            isCalculating = true;
+            
+            // Calculate percentage
+            if (subtotal > 0) {
+                const discountPercent = (discountAmount / subtotal) * 100;
+                document.getElementById('discount-percent').value = discountPercent.toFixed(2);
+            }
+            
+            // Calculate final total
+            const finalTotal = Math.max(0, subtotal - discountAmount);
+            document.getElementById('final-total').value = finalTotal.toFixed(2);
+            
+            isCalculating = false;
+        }
+
+        function calculateFromPercent() {
+            if (isCalculating) return;
+            
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discountPercent = parseFloat(document.getElementById('discount-percent').value) || 0;
+            
+            isCalculating = true;
+            
+            // Calculate amount
+            if (subtotal > 0) {
+                const discountAmount = (subtotal * discountPercent) / 100;
+                document.getElementById('discount-amount').value = discountAmount.toFixed(2);
+            }
+            
+            // Calculate final total
+            const discountAmountFinal = parseFloat(document.getElementById('discount-amount').value) || 0;
+            const finalTotal = Math.max(0, subtotal - discountAmountFinal);
+            document.getElementById('final-total').value = finalTotal.toFixed(2);
+            
+            isCalculating = false;
+        }
+
+        function runTest() {
+            calculateFromAmount();
+            
+            // Show results
+            const expectedPercent = 21.05;
+            const expectedTotal = 300.00;
+            
+            const actualPercent = parseFloat(document.getElementById('discount-percent').value);
+            const actualTotal = parseFloat(document.getElementById('final-total').value);
+            
+            const percentMatch = Math.abs(actualPercent - expectedPercent) < 0.1;
+            const totalMatch = Math.abs(actualTotal - expectedTotal) < 0.01;
+            
+            document.getElementById('result-percent').innerHTML = 
+                `<td>ส่วนลด (%)</td><td>${expectedPercent}</td><td>${actualPercent.toFixed(2)}</td><td style="color: ${percentMatch ? 'green' : 'red'}">${percentMatch ? '✅ PASS' : '❌ FAIL'}</td>`;
+            
+            document.getElementById('result-total').innerHTML = 
+                `<td>ยอดสุทธิ</td><td>${expectedTotal.toFixed(2)}</td><td>${actualTotal.toFixed(2)}</td><td style="color: ${totalMatch ? 'green' : 'red'}">${totalMatch ? '✅ PASS' : '❌ FAIL'}</td>`;
+            
+            document.getElementById('result').style.display = 'block';
+        }
+
+        function resetTest() {
+            document.getElementById('subtotal').value = '380';
+            document.getElementById('discount-amount').value = '80';
+            document.getElementById('discount-percent').value = '';
+            document.getElementById('final-total').value = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function runMultipleTests() {
+            const testCases = [
+                { subtotal: 380, discount: 80, expectedPercent: 21.05, expectedTotal: 300 },
+                { subtotal: 1000, discount: 100, expectedPercent: 10, expectedTotal: 900 },
+                { subtotal: 500, discount: 25, expectedPercent: 5, expectedTotal: 475 },
+                { subtotal: 200, discount: 200, expectedPercent: 100, expectedTotal: 0 },
+                { subtotal: 150, discount: 37.5, expectedPercent: 25, expectedTotal: 112.5 }
+            ];
+            
+            let results = '<h3>ผลการทดสอบหลายกรณี:</h3><table><tr><th>Subtotal</th><th>Discount</th><th>Expected %</th><th>Actual %</th><th>Expected Total</th><th>Actual Total</th><th>Result</th></tr>';
+            
+            testCases.forEach((testCase, index) => {
+                // Set values
+                document.getElementById('subtotal').value = testCase.subtotal;
+                document.getElementById('discount-amount').value = testCase.discount;
+                
+                // Calculate
+                calculateFromAmount();
+                
+                const actualPercent = parseFloat(document.getElementById('discount-percent').value);
+                const actualTotal = parseFloat(document.getElementById('final-total').value);
+                
+                const percentMatch = Math.abs(actualPercent - testCase.expectedPercent) < 0.1;
+                const totalMatch = Math.abs(actualTotal - testCase.expectedTotal) < 0.01;
+                const allMatch = percentMatch && totalMatch;
+                
+                results += `<tr style="background-color: ${allMatch ? '#e8f5e8' : '#ffe8e8'}">
+                    <td>${testCase.subtotal}</td>
+                    <td>${testCase.discount}</td>
+                    <td>${testCase.expectedPercent}</td>
+                    <td>${actualPercent.toFixed(2)}</td>
+                    <td>${testCase.expectedTotal}</td>
+                    <td>${actualTotal.toFixed(2)}</td>
+                    <td>${allMatch ? '✅ PASS' : '❌ FAIL'}</td>
+                </tr>`;
+            });
+            
+            results += '</table>';
+            document.getElementById('multiple-results').innerHTML = results;
+        }
+
+        // Initialize
+        window.onload = function() {
+            resetTest();
+        }
+    </script>
+</body>
+</html>

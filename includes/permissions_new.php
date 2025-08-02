@@ -327,9 +327,10 @@ class Permissions {
             $menuItems[] = ['url' => 'daily_tasks_demo.php', 'title' => 'งานประจำวัน', 'icon' => 'fas fa-tasks'];
         }
         
-        if (self::hasPermission('call_history')) {
-            $menuItems[] = ['url' => 'call_history_demo.php', 'title' => 'ประวัติการโทร', 'icon' => 'fas fa-phone'];
-        }
+        // Call History - ถูกลบออกตามคำสั่ง (2025-07-29)
+        // if (self::hasPermission('call_history')) {
+        //     $menuItems[] = ['url' => 'call_history_selector.php', 'title' => 'ประวัติการโทร', 'icon' => 'fas fa-phone'];
+        // }
         
         // Admin tools - only admin
         if (self::hasPermission('import_customers')) {

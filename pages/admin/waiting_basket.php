@@ -140,6 +140,102 @@ $additionalCSS = '
         .contact-overdue { background-color: #fd7e14; color: white; }
         .contact-due { background-color: #ffc107; color: black; }
         .contact-recent { background-color: #28a745; color: white; }
+        
+        /* Table styles for customer display */
+        .customers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .customers-table th,
+        .customers-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        
+        .customers-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-top: 1px solid #dee2e6;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .customers-table tbody tr:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .customers-table tbody tr.priority-high {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .customers-table tbody tr.priority-medium {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .customers-table tbody tr.priority-low {
+            border-left: 4px solid #6c757d;
+        }
+        
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .customer-code-column {
+            width: 100px;
+            font-weight: 600;
+        }
+        
+        .customer-name-column {
+            min-width: 180px;
+        }
+        
+        .phone-column {
+            width: 130px;
+        }
+        
+        .grade-column,
+        .temp-column {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .status-column {
+            width: 120px;
+        }
+        
+        .purchase-column {
+            width: 120px;
+            text-align: right;
+        }
+        
+        .contact-column {
+            width: 130px;
+        }
+        
+        .priority-column {
+            width: 100px;
+            text-align: center;
+        }
+        
+        .attempts-column {
+            width: 80px;
+            text-align: center;
+        }
+        
+        .actions-column {
+            width: 80px;
+            text-align: center;
+        }
     </style>
 ';
 
@@ -411,7 +507,26 @@ $additionalJS = <<<'JS'
                 return;
             }
 
-            let html = `<div class="row">`;
+            let html = `
+                <div class="table-container">
+                    <table class="customers-table table table-hover">
+                        <thead>
+                            <tr>
+                                <th class="customer-code-column">รหัสลูกค้า</th>
+                                <th class="customer-name-column">ชื่อลูกค้า</th>
+                                <th class="phone-column">เบอร์โทร</th>
+                                <th class="grade-column">เกรด</th>
+                                <th class="temp-column">อุณหภูมิ</th>
+                                <th class="status-column">สถานะ</th>
+                                <th class="purchase-column">ยอดซื้อ</th>
+                                <th class="contact-column">ติดต่อล่าสุด</th>
+                                <th class="priority-column">ความสำคัญ</th>
+                                <th class="attempts-column">ครั้ง</th>
+                                <th class="actions-column">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
             
             customers.forEach(customer => {
                 const priority = customer.Priority || 'MEDIUM';
@@ -419,37 +534,59 @@ $additionalJS = <<<'JS'
                 const contactStatus = getContactStatus(customer.DaysSinceContact);
                 
                 html += `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="customer-card ${priorityClass}" onclick="showCustomerDetail('${customer.CustomerCode}')">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="mb-0">${customer.CustomerName}</h6>
-                                <span class="priority-badge priority-${priority}">${getPriorityLabel(priority)}</span>
+                    <tr class="${priorityClass}" onclick="showCustomerDetail('${customer.CustomerCode}')">
+                        <td class="customer-code-column">
+                            <strong>${customer.CustomerCode}</strong>
+                        </td>
+                        <td class="customer-name-column">
+                            <div>
+                                <strong>${customer.CustomerName}</strong>
+                                <br><small class="text-muted">${customer.CustomerStatus}</small>
                             </div>
-                            <p class="text-muted mb-1">รหัส: ${customer.CustomerCode}</p>
-                            <p class="text-muted mb-2">โทร: ${customer.CustomerTel || 'ไม่ระบุ'}</p>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <span class="grade-badge grade-${customer.CustomerGrade}">${customer.CustomerGrade}</span>
-                                    <span class="temp-badge temp-${customer.CustomerTemperature} ms-1">${customer.CustomerTemperature}</span>
-                                </div>
-                                <small class="text-muted">฿${parseFloat(customer.TotalPurchase).toLocaleString()}</small>
-                            </div>
-                            <div class="mb-2">
-                                <small class="text-muted">สถานะ: ${customer.CustomerStatus}</small>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="contact-status ${contactStatus.class}">${contactStatus.text}</span>
-                                <small class="text-muted">พยายาม: ${customer.ContactAttempts} ครั้ง</small>
-                            </div>
-                        </div>
-                    </div>
+                        </td>
+                        <td class="phone-column">
+                            ${customer.CustomerTel || '<span class="text-muted">ไม่ระบุ</span>'}
+                        </td>
+                        <td class="grade-column">
+                            <span class="grade-badge grade-${customer.CustomerGrade}">${customer.CustomerGrade}</span>
+                        </td>
+                        <td class="temp-column">
+                            <span class="temp-badge temp-${customer.CustomerTemperature}">${customer.CustomerTemperature}</span>
+                        </td>
+                        <td class="status-column">
+                            <small>${customer.CustomerStatus}</small>
+                        </td>
+                        <td class="purchase-column">
+                            <strong>฿${parseFloat(customer.TotalPurchase).toLocaleString()}</strong>
+                        </td>
+                        <td class="contact-column">
+                            <span class="contact-status ${contactStatus.class}" style="font-size: 0.8rem;">${contactStatus.text}</span>
+                        </td>
+                        <td class="priority-column">
+                            <span class="priority-badge priority-${priority}">${getPriorityLabel(priority)}</span>
+                        </td>
+                        <td class="attempts-column">
+                            <span class="badge bg-secondary">${customer.ContactAttempts}</span>
+                        </td>
+                        <td class="actions-column">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); showCustomerDetail('${customer.CustomerCode}')" 
+                                    title="ดูรายละเอียด">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
                 `;
             });
             
-            html += `</div>`;
-            html += `<div class="mt-3 text-center">
-                        <p class="text-muted">แสดง ${customers.length} รายการ</p>
-                     </div>`;
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3 text-center">
+                    <p class="text-muted">แสดง <strong>${customers.length}</strong> รายการ</p>
+                </div>
+            `;
             
             container.innerHTML = html;
         }

@@ -133,6 +133,66 @@ $additionalCSS = '
         .contact-overdue { background-color: #fd7e14; color: white; }
         .contact-due { background-color: #ffc107; color: black; }
         .contact-recent { background-color: #28a745; color: white; }
+        
+        /* Table view styles */
+        .table-view {
+            display: none;
+        }
+        
+        .table-view.active {
+            display: block;
+        }
+        
+        .card-view.active {
+            display: block;
+        }
+        
+        .customer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .customer-table th,
+        .customer-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        
+        .customer-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-top: 1px solid #dee2e6;
+            color: #495057;
+        }
+        
+        .customer-table tbody tr:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .customer-table .priority-high {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .customer-table .priority-medium {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .customer-table .priority-low {
+            border-left: 4px solid #6c757d;
+        }
+        
+        .badge-priority {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }
+        
+        .actions-column {
+            width: 120px;
+        }
     </style>
 ';
 
@@ -278,7 +338,17 @@ ob_start();
                 </div>
 
                 <div class="waiting-section">
-                    <h5><i class="fas fa-clock"></i> ลูกค้าที่รออยู่</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="fas fa-clock"></i> ลูกค้าที่รออยู่</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="cardViewBtn" onclick="switchView('card')">
+                                <i class="fas fa-th-large"></i> การ์ด
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm" id="tableViewBtn" onclick="switchView('table')">
+                                <i class="fas fa-table"></i> ตาราง
+                            </button>
+                        </div>
+                    </div>
                     <div class="loading-spinner" id="waitingLoading">
                         <i class="fas fa-spinner fa-spin"></i> กำลังโหลด...
                     </div>
@@ -333,11 +403,13 @@ $content = ob_get_clean();
 // Additional JavaScript
 $additionalJS = '
     <script>
-    <script>
+        let currentView = 'table'; // Default view
+        
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             refreshDashboard();
             loadWaitingCustomers();
+            updateViewButtons();
         });
 
         // Dashboard functions
@@ -403,7 +475,75 @@ $additionalJS = '
                 return;
             }
 
-            let html = `<div class="row">`;
+            if (currentView === 'table') {
+                displayTableView(customers, container);
+            } else {
+                displayCardView(customers, container);
+            }
+        }
+        
+        function displayTableView(customers, container) {
+            let html = `
+                <div class="table-view active">
+                    <div class="table-responsive">
+                        <table class="customer-table table">
+                            <thead>
+                                <tr>
+                                    <th>รหัสลูกค้า</th>
+                                    <th>ชื่อลูกค้า</th>
+                                    <th>เบอร์โทร</th>
+                                    <th>เกรด</th>
+                                    <th>อุณหภูมิ</th>
+                                    <th>สถานะ</th>
+                                    <th>ยอดซื้อ</th>
+                                    <th>ติดต่อล่าสุด</th>
+                                    <th>ความสำคัญ</th>
+                                    <th class="actions-column">การดำเนินการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            customers.forEach(customer => {
+                const priority = customer.Priority || 'MEDIUM';
+                const priorityClass = `priority-${priority.toLowerCase()}`;
+                const contactStatus = getContactStatus(customer.DaysSinceContact);
+                
+                html += `
+                    <tr class="${priorityClass}" onclick="showCustomerDetail('${customer.CustomerCode}')">
+                        <td><strong>${customer.CustomerCode}</strong></td>
+                        <td>${customer.CustomerName}</td>
+                        <td>${customer.CustomerTel || 'ไม่ระบุ'}</td>
+                        <td><span class="grade-badge grade-${customer.CustomerGrade}">${customer.CustomerGrade}</span></td>
+                        <td><span class="temp-badge temp-${customer.CustomerTemperature}">${customer.CustomerTemperature}</span></td>
+                        <td><small>${customer.CustomerStatus}</small></td>
+                        <td>฿${parseFloat(customer.TotalPurchase).toLocaleString()}</td>
+                        <td><span class="contact-status ${contactStatus.class}" style="font-size: 0.8rem;">${contactStatus.text}</span></td>
+                        <td><span class="badge badge-priority priority-${priority}">${getPriorityLabel(priority)}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); showCustomerDetail('${customer.CustomerCode}')" title="ดูรายละเอียด">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <p class="text-muted">แสดง ${customers.length} รายการ</p>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function displayCardView(customers, container) {
+            let html = `<div class="card-view active"><div class="row">`;
             
             customers.forEach(customer => {
                 const priority = customer.Priority || 'MEDIUM';
@@ -438,10 +578,9 @@ $additionalJS = '
                 `;
             });
             
-            html += `</div>`;
-            html += `<div class="mt-3 text-center">
+            html += `</div><div class="mt-3 text-center">
                         <p class="text-muted">แสดง ${customers.length} รายการ</p>
-                     </div>`;
+                     </div></div>`;
             
             container.innerHTML = html;
         }
@@ -476,6 +615,30 @@ $additionalJS = '
             document.getElementById('priorityFilter').value = '';
             document.getElementById('limitFilter').value = '50';
             loadWaitingCustomers();
+        }
+        
+        // View switching functions
+        function switchView(viewType) {
+            currentView = viewType;
+            updateViewButtons();
+            loadWaitingCustomers(); // Reload with new view
+        }
+        
+        function updateViewButtons() {
+            const cardBtn = document.getElementById('cardViewBtn');
+            const tableBtn = document.getElementById('tableViewBtn');
+            
+            if (currentView === 'table') {
+                cardBtn.classList.remove('btn-primary');
+                cardBtn.classList.add('btn-outline-primary');
+                tableBtn.classList.remove('btn-outline-primary');
+                tableBtn.classList.add('btn-primary');
+            } else {
+                tableBtn.classList.remove('btn-primary');
+                tableBtn.classList.add('btn-outline-primary');
+                cardBtn.classList.remove('btn-outline-primary');
+                cardBtn.classList.add('btn-primary');
+            }
         }
 
         function showCustomerDetail(customerCode) {

@@ -1,5 +1,15 @@
 // Customer Detail Page JavaScript
 
+// ป้องกันการ Submit ด้วย Enter key
+function preventEnterSubmit(event) {
+    if (event.key === 'Enter' && event.target.tagName !== 'TEXTAREA') {
+        // ถ้ากด Enter และไม่ใช่ใน textarea ให้ป้องกัน submit
+        event.preventDefault();
+        return false;
+    }
+    return true;
+}
+
 class CustomerDetail {
     constructor(customerCode, currentUser) {
         this.customerCode = customerCode;
@@ -236,92 +246,147 @@ class CustomerDetail {
             'D': '#6c757d'
         };
 
-        const tempColors = {
+        const temperatureColors = {
             'HOT': '#dc3545',
-            'WARM': '#fd7e14',
-            'COLD': '#6f42c1'
+            'WARM': '#fd7e14', 
+            'COLD': '#17a2b8',
+            'FROZEN': '#6c757d'
         };
 
-        const tempIcons = {
+        const temperatureIcons = {
             'HOT': '🔥',
-            'WARM': '☀️',
-            'COLD': '❄️'
+            'WARM': '🌡️', 
+            'COLD': '❄️',
+            'FROZEN': '🧊'
         };
 
+        // Compact intelligence display with Grade and Temperature
         content.innerHTML = `
-            <div class="intelligence-grid">
-                <div class="intelligence-section">
-                    <h4>📊 Customer Grade</h4>
-                    <div class="grade-display">
-                        <div class="grade-badge-large" style="background: ${gradeColors[customer.CustomerGrade]}">
-                            Grade ${customer.CustomerGrade}
-                        </div>
-                        <div class="grade-details">
-                            <div class="detail-item">
-                                <span class="label">Total Purchase:</span>
-                                <span class="value">${this.formatMoney(customer.TotalPurchase)}</span>
+            <div class="intelligence-compact">
+                <!-- Summary Cards -->
+                <div class="intelligence-summary">
+                    <div class="summary-card grade-summary">
+                        <div class="summary-header">
+                            <div class="grade-badge-compact" style="background: ${gradeColors[customer.CustomerGrade]}">
+                                ${customer.CustomerGrade}
                             </div>
-                            <div class="detail-item">
-                                <span class="label">Last Calculated:</span>
+                            <div class="summary-title">
+                                <div class="grade-name">${this.getGradeTitle(customer.CustomerGrade)}</div>
+                                <div class="grade-amount">${this.formatMoney(customer.TotalPurchase)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card temp-summary">
+                        <div class="summary-header">
+                            <div class="temp-badge-compact" style="background: ${temperatureColors[customer.CustomerTemperature || 'COLD']}">
+                                ${temperatureIcons[customer.CustomerTemperature || 'COLD']}
+                            </div>
+                            <div class="summary-title">
+                                <div class="temp-name">${customer.CustomerTemperature || 'COLD'}</div>
+                                <div class="temp-desc">${this.getTemperatureTitle(customer.CustomerTemperature || 'COLD')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card info-summary">
+                        <div class="summary-details">
+                            <div class="detail-row">
+                                <span class="label">อัปเดตล่าสุด:</span>
                                 <span class="value">${this.formatDateTime(customer.GradeCalculatedDate)}</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="intelligence-section">
-                    <h4>🌡️ Customer Temperature</h4>
-                    <div class="temperature-display">
-                        <div class="temperature-badge-large" style="background: ${tempColors[customer.CustomerTemperature]}">
-                            ${tempIcons[customer.CustomerTemperature]} ${customer.CustomerTemperature}
-                        </div>
-                        <div class="temperature-details">
-                            <div class="detail-item">
-                                <span class="label">Last Contact:</span>
-                                <span class="value">${this.formatDate(customer.LastContactDate)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Contact Attempts:</span>
-                                <span class="value">${customer.ContactAttempts || 0}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="label">Last Updated:</span>
-                                <span class="value">${this.formatDateTime(customer.TemperatureUpdatedDate)}</span>
+                            <div class="detail-row">
+                                <span class="label">ซื้อล่าสุด:</span>
+                                <span class="value">${this.formatDate(customer.LastPurchaseDate)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="intelligence-section">
-                    <h4>💡 Recommendations</h4>
-                    <div class="recommendations">
-                        ${intelligence.recommendations.map(rec => `
-                            <div class="recommendation-item">
-                                ${rec}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div class="intelligence-section">
-                    <h4>📈 Grade Criteria</h4>
-                    <div class="criteria-info">
-                        <div class="current-amount">
-                            Current: ${this.formatMoney(intelligence.grade_criteria.current_amount)}
-                        </div>
-                        <div class="criteria-list">
-                            ${Object.entries(intelligence.grade_criteria.criteria).map(([grade, criteria]) => `
-                                <div class="criteria-item ${customer.CustomerGrade === grade ? 'current' : ''}">
-                                    <span class="grade">Grade ${grade}:</span>
-                                    <span class="amount">${this.formatMoney(criteria.min)}+</span>
-                                    <span class="description">${criteria.description}</span>
+                <!-- Collapsible Criteria -->
+                <div class="criteria-toggle-section">
+                    <button class="criteria-toggle-btn" onclick="toggleCriteriaDetails()" type="button">
+                        <span class="toggle-text">ดูเกณฑ์ Grade และ Temperature</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
+                    
+                    <div class="criteria-details" id="criteria-details" style="display: none;">
+                        <div class="criteria-compact">
+                            <div class="grade-criteria-compact">
+                                <h5>เกณฑ์ Grade</h5>
+                                <div class="criteria-grid-compact">
+                                    <div class="criteria-item-compact ${customer.CustomerGrade === 'A' ? 'current' : ''}">
+                                        <span class="grade-label" style="background: ${gradeColors['A']}">A</span>
+                                        <span class="grade-range">≥ ฿810K</span>
+                                        <span class="grade-desc">VIP</span>
+                                    </div>
+                                    <div class="criteria-item-compact ${customer.CustomerGrade === 'B' ? 'current' : ''}">
+                                        <span class="grade-label" style="background: ${gradeColors['B']}">B</span>
+                                        <span class="grade-range">฿85K - ฿809K</span>
+                                        <span class="grade-desc">Premium</span>
+                                    </div>
+                                    <div class="criteria-item-compact ${customer.CustomerGrade === 'C' ? 'current' : ''}">
+                                        <span class="grade-label" style="background: ${gradeColors['C']}">C</span>
+                                        <span class="grade-range">฿2K - ฿84K</span>
+                                        <span class="grade-desc">Regular</span>
+                                    </div>
+                                    <div class="criteria-item-compact ${customer.CustomerGrade === 'D' ? 'current' : ''}">
+                                        <span class="grade-label" style="background: ${gradeColors['D']}">D</span>
+                                        <span class="grade-range">< ฿2K</span>
+                                        <span class="grade-desc">New</span>
+                                    </div>
                                 </div>
-                            `).join('')}
+                            </div>
+
+                            <div class="temp-criteria-compact">
+                                <h5>เกณฑ์ Temperature</h5>
+                                <div class="temp-grid-compact">
+                                    <div class="temp-item-compact ${(customer.CustomerTemperature || 'COLD') === 'HOT' ? 'current' : ''}">
+                                        <span class="temp-icon" style="background: ${temperatureColors['HOT']}">🔥</span>
+                                        <span class="temp-label">HOT - กำลังสนใจ</span>
+                                    </div>
+                                    <div class="temp-item-compact ${(customer.CustomerTemperature || 'COLD') === 'WARM' ? 'current' : ''}">
+                                        <span class="temp-icon" style="background: ${temperatureColors['WARM']}">🌡️</span>
+                                        <span class="temp-label">WARM - มีการตอบสนอง</span>
+                                    </div>
+                                    <div class="temp-item-compact ${(customer.CustomerTemperature || 'COLD') === 'COLD' ? 'current' : ''}">
+                                        <span class="temp-icon" style="background: ${temperatureColors['COLD']}">❄️</span>
+                                        <span class="temp-label">COLD - ไม่ค่อยมีกิจกรรม</span>
+                                    </div>
+                                    <div class="temp-item-compact ${(customer.CustomerTemperature || 'COLD') === 'FROZEN' ? 'current' : ''}">
+                                        <span class="temp-icon" style="background: ${temperatureColors['FROZEN']}">🧊</span>
+                                        <span class="temp-label">FROZEN - ไม่ตอบสนอง</span>
+                                    </div>
+                                </div>
+                                ${(customer.CustomerGrade === 'A' || customer.CustomerGrade === 'B') ? 
+                                    '<div class="protection-notice-compact">🛡️ ลูกค้า Grade A,B ได้รับการปกป้องพิเศษ</div>' : ''
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         `;
+    }
+
+    getGradeTitle(grade) {
+        const titles = {
+            'A': 'VIP Customer - High Value',
+            'B': 'Premium Customer - Good Value',  
+            'C': 'Regular Customer - Standard Value',
+            'D': 'New Customer - Building Relationship'
+        };
+        return titles[grade] || 'Unknown Grade';
+    }
+
+    getTemperatureTitle(temperature) {
+        const titles = {
+            'HOT': 'Very Active Customer',
+            'WARM': 'Responsive Customer',
+            'COLD': 'Inactive Customer',
+            'FROZEN': 'Non-Responsive Customer'
+        };
+        return titles[temperature] || 'Unknown Temperature';
     }
 
     renderIntelligenceError(message) {
@@ -858,21 +923,18 @@ class CustomerDetail {
             }
         }
         
+        // Validate payment method
+        const paymentMethod = formData.get('payment_method');
+        if (!paymentMethod || paymentMethod.trim() === '') {
+            CRMUtils.showNotification('กรุณาเลือกวิธีการชำระเงิน', 'error');
+            this.resetOrderSubmitButton(submitButton);
+            return;
+        }
+        
         // Validate products
         if (products.length === 0) {
             CRMUtils.showNotification('กรุณากรอกข้อมูลสินค้าอย่างน้อย 1 รายการ', 'error');
-            // Reset submission state
-            this.isSubmittingOrder = false;
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.style.backgroundColor = '';
-                submitButton.style.cursor = '';
-                const originalText = submitButton.getAttribute('data-original-text');
-                if (originalText) {
-                    submitButton.textContent = originalText;
-                    submitButton.removeAttribute('data-original-text');
-                }
-            }
+            this.resetOrderSubmitButton(submitButton);
             return;
         }
         
@@ -895,20 +957,28 @@ class CustomerDetail {
             return;
         }
         
-        // Get discount information
-        const discountAmount = parseFloat(formData.get('discount_amount') || 0);
-        const discountPercent = parseFloat(formData.get('discount_percent') || 0);
-        const discountRemarks = formData.get('discount_remarks') || '';
+        // Get ALL calculated values from textboxes (as calculated by frontend)
+        const totalQuantity = parseFloat(document.getElementById('total-quantity').value || 0);
+        const subtotalAmount = parseFloat(document.getElementById('subtotal-amount').value || 0);
+        const discountAmount = parseFloat(document.getElementById('discount-amount').value || 0);
+        const discountPercent = parseFloat(document.getElementById('discount-percent').value || 0);
+        const discountRemarks = document.getElementById('discount-remarks').value || '';
+        const totalAmount = parseFloat(document.getElementById('total-amount').value || 0);
         
-        // Prepare data for API
+        // Prepare data for API - SEND TEXTBOX VALUES DIRECTLY
         const data = {
             CustomerCode: this.customerCode,
             DocumentDate: documentDate,
             PaymentMethod: formData.get('payment_method') || '',
             products: products,
-            discount_amount: discountAmount,
-            discount_percent: discountPercent,
-            discount_remarks: discountRemarks
+            
+            // DIRECT TEXTBOX MAPPING:
+            total_quantity: totalQuantity,    // → Quantity
+            subtotal_amount: subtotalAmount,  // → SubtotalAmount  
+            discount_amount: discountAmount,  // → DiscountAmount
+            discount_percent: discountPercent, // → DiscountPercent
+            discount_remarks: discountRemarks, // → DiscountRemarks
+            total_amount: totalAmount         // → Price
         };
         
         // Debug log
@@ -927,6 +997,18 @@ class CustomerDetail {
             console.log('Response status:', response.status);
             const result = await response.json();
             console.log('API response:', result);
+            
+            // Show detailed debug information
+            if (result.debug) {
+                console.log('Debug info:', result.debug);
+                console.log('DB Error:', result.debug.db_error);
+                console.log('Input Data:', result.debug.input_data);
+                if (result.debug.error) {
+                    console.log('Exception:', result.debug.error);
+                    console.log('File:', result.debug.file);
+                    console.log('Line:', result.debug.line);
+                }
+            }
 
             // API returns both 'success' and 'status' fields - check both
             if (result.success === true || result.status === 'success') {
@@ -938,6 +1020,19 @@ class CustomerDetail {
                 this.loadCustomerInfo(); // Reload to update customer status
             } else {
                 console.error('Order creation failed:', result);
+                
+                // Show debug information in console for troubleshooting
+                if (result.debug) {
+                    console.error('=== ORDER DEBUG INFO ===');
+                    console.error('DB Error:', result.debug.db_error);
+                    console.error('Input Data:', result.debug.input_data);
+                    if (result.debug.error) {
+                        console.error('Exception:', result.debug.error);
+                        console.error('File:', result.debug.file, 'Line:', result.debug.line);
+                    }
+                    console.error('Full Debug Object:', JSON.stringify(result.debug, null, 2));
+                    console.error('=== END DEBUG ===');
+                }
                 
                 // Show detailed errors if available, otherwise show general message
                 if (result.errors && result.errors.length > 0) {
@@ -1559,10 +1654,17 @@ function calculateOrderTotals() {
     calculateFinalTotal();
 }
 
+// Global flag to prevent infinite loop during calculations
+let isCalculating = false;
+
 // Calculate discount from percentage
 function calculateDiscountFromPercent() {
+    if (isCalculating) return; // Prevent infinite loop
+    
     const subtotal = parseFloat(document.getElementById('subtotal-amount').value) || 0;
     const discountPercent = parseFloat(document.getElementById('discount-percent').value) || 0;
+    
+    isCalculating = true; // Set flag
     
     if (discountPercent > 0 && subtotal > 0) {
         const discountAmount = (subtotal * discountPercent) / 100;
@@ -1572,25 +1674,63 @@ function calculateDiscountFromPercent() {
         document.getElementById('discount-amount').value = '';
     }
     
-    calculateFinalTotal();
+    // Calculate final total (will be blocked if still calculating)
+    const finalTotal = Math.max(0, subtotal - parseFloat(document.getElementById('discount-amount').value || 0));
+    document.getElementById('total-amount').value = finalTotal.toFixed(2);
+    
+    isCalculating = false; // Reset flag
+}
+
+// Reset submit button state for order form
+function resetOrderSubmitButton(submitButton) {
+    if (submitButton) {
+        const originalText = submitButton.getAttribute('data-original-text') || 'บันทึก';
+        submitButton.disabled = false;
+        submitButton.style.backgroundColor = '';
+        submitButton.style.cursor = '';
+        submitButton.textContent = originalText;
+    }
+    // Reset global submission state
+    if (window.customerDetail) {
+        window.customerDetail.isSubmittingOrder = false;
+    }
 }
 
 // Calculate final total amount
 function calculateFinalTotal() {
+    if (isCalculating) return; // Prevent infinite loop
+    
     const subtotal = parseFloat(document.getElementById('subtotal-amount').value) || 0;
     const discountAmount = parseFloat(document.getElementById('discount-amount').value) || 0;
     
     // Update discount percentage if discount amount is manually entered
-    const currentDiscountPercent = parseFloat(document.getElementById('discount-percent').value || 0);
+    const discountPercentField = document.getElementById('discount-percent');
+    const currentDiscountPercent = parseFloat(discountPercentField.value || 0);
     const calculatedDiscountPercent = subtotal > 0 ? (discountAmount / subtotal) * 100 : 0;
     
     // Only update if there's a significant difference (avoid infinite loops)
     if (Math.abs(calculatedDiscountPercent - currentDiscountPercent) > 0.01) {
-        document.getElementById('discount-percent').value = calculatedDiscountPercent.toFixed(2);
+        isCalculating = true; // Set flag
+        discountPercentField.value = calculatedDiscountPercent.toFixed(2);
+        isCalculating = false; // Reset flag
     }
     
     const finalTotal = Math.max(0, subtotal - discountAmount);
     document.getElementById('total-amount').value = finalTotal.toFixed(2);
+}
+
+// Toggle function for criteria details
+function toggleCriteriaDetails() {
+    const details = document.getElementById('criteria-details');
+    const toggleIcon = document.querySelector('.toggle-icon');
+    
+    if (details.style.display === 'none' || details.style.display === '') {
+        details.style.display = 'block';
+        toggleIcon.textContent = '▲';
+    } else {
+        details.style.display = 'none';
+        toggleIcon.textContent = '▼';
+    }
 }
 
 // Global customerDetail variable will be initialized from the HTML page
